@@ -37,6 +37,7 @@ int main()
 {
 	//--- Initialize GLFW
 	glfwInit();
+	//Set the version number of GLFW, prevents running without correct version
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -79,6 +80,7 @@ int main()
 	Shader ourShader("7.4.camera.vs", "7.4.camera.fs");
 
 	//--- Vertex Data for cube
+	// remember that the coordinate is screen space, -1 - 1
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -155,6 +157,14 @@ int main()
 	//--- Vertex attribute pointers
 	// Will tell OpenGL how to interpret the vertex buffer data.
 	// Relates to variables in the shader, like the first 3 relating to position, last two are texture coords.
+	
+	// First parameter: Attribute location for the shader, should match 'location = 0' in the vertex shader
+	// Second parameter: Each vertex has 3 values, xyz coordinates in this case. Colour for instance can bring it to 4
+	// Third parameter: Type of each component is float (each coordinate)
+	// Fourth parameter: NO normalisation is applied
+	// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
+	// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
+
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -168,11 +178,23 @@ int main()
 	unsigned int texture1;
 	glGenTextures(1, &texture1);
 	glBindTexture(GL_TEXTURE_2D, texture1);
-	// set the texture wrapping parameters
+
+	/*With the texture bound we can change it's wrapping method
+		GL_CLAMP_TO_BORDER prevents the texture from overspilling
+		GL_CLAMP_TO_EDGE allows the edge pixels to continuously overspill
+		GL_REPEAT allows the texture to repeatedly render itself adjacently
+		GL_MIRRORED_REPEAT accomplishes GL_REPEAT while also flipping textures in the given direction of their given adjacent texture
+	*/
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	// -- TEXTURE FILTERING
+	// Texture filtering allows for approximation of values based on neigbouring pixels.
+	// Nearest looks blocky, a point between two texels is simply the texture coordinate it is in, leads to a pixelly effect
+	// Linear performs interpolation between texels, so pixels between two texels are smoothened out
+
+	// Nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
@@ -220,8 +242,32 @@ int main()
 
 	//--- Set the sampler on each shader to the correct texture
 	ourShader.Use();
+	//Attaches texture unit 0 and 1
 	ourShader.setInt("texture1", 0);
 	ourShader.setInt("texture2", 1);
+
+	//--- Coordinate space and 3D
+	// OpenGL expects all the vertices that we want visible to be in normalised device coordinates -1 - 1.
+	// Coordinates outside this range are not visible.
+	// We usually specify the coordinates in a range (or space) and in the vertex shader transform these into normalized device coordinates.
+	// These are given to the rasterizer to transform them into 2D pixels on the screen.
+	/* This is a several step process where coordinates are moved between 5 different coordinate spaces:
+	* - Local Space or Object Space
+	* - World Space
+	* - View space
+	* - Clip Space
+	* - Screen Space
+	*
+	* Converting between these coordinate spaces is done through the use of the Model, View and Projection matrices.
+	* Vertex coordinates start in local space as local coordinates and are then further processed to world coordinates, view coordinates, clip coordinates and eventually end up as screen coordinates.
+	* World to view space coordinates are transformed in such a way that each coordinate is as seen from the camera's or viewers point of view
+	* Clip coordinates are processed to the -1 - 1 range and determine which vertices appear on screen,
+	* Then the -1 - 1 coordinates transforms it to the range determined by the viewport size, as not everything is a perfect square.
+	* Those resulting coordinates then go to the fragment shader.
+	* See a better explanation at https://learnopengl.com/Getting-started/Coordinate-Systems
+	*
+	*/
+	
 
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))
@@ -240,6 +286,7 @@ int main()
 
 		//--- Texture assigning
 		// Set one of the texture units to the texture created, to use all textures in one draw call
+		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1); //Like last time, future operations will affect this texture
 		glActiveTexture(GL_TEXTURE1);
@@ -253,6 +300,10 @@ int main()
 		ourShader.setMat4("projection", projection);
 
 		//--- Pass updated view matrix to vertex shaders
+		//--Creating cameras
+		//The camera / view space are all the vector coordinates as seen from the camera's perspective as the origin of the scene
+		//THe view matrix transforms all world coordinates into view coordinates relative to the camera's position and direction.
+
 		glm::mat4 view = camera.GetViewMatrix();
 		ourShader.setMat4("view", view);
 

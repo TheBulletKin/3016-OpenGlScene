@@ -82,6 +82,8 @@ public:
     //--- Sets the uniform values of the current shader to the value passed in
     void setBool(const std::string& name, bool value) const
     {
+        //Gets the location of the uniform variable denoted by 'name', by a shader in the shader program denoted by ID,
+        //Sets the uniform value to the 'value' part.
         glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
     }
     // ------------------------------------------------------------------------
