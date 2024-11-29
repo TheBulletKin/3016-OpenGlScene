@@ -21,15 +21,17 @@ const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 
+using namespace glm;
+
 class Camera
 {
 public:
 	// camera Attributes
-	glm::vec3 Position;
-	glm::vec3 Front;
-	glm::vec3 Up;
-	glm::vec3 Right;
-	glm::vec3 WorldUp;
+	vec3 Position;
+	vec3 Front;
+	vec3 Up;
+	vec3 Right;
+	vec3 WorldUp;
 	// euler Angles
 	float Yaw;
 	float Pitch;
@@ -39,7 +41,7 @@ public:
 	float Zoom;
 
 	// constructor with vectors
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	Camera(vec3 position = vec3(0.0f, 0.0f, 0.0f), vec3 up = vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
 		Position = position;
 		WorldUp = up;
@@ -49,33 +51,52 @@ public:
 	}
 
 	// constructor with scalar values
-	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
-		Position = glm::vec3(posX, posY, posZ);
-		WorldUp = glm::vec3(upX, upY, upZ);
+		Position = vec3(posX, 3.0f, posZ);
+		WorldUp = vec3(upX, upY, upZ);
 		Yaw = yaw;
 		Pitch = pitch;
 		updateCameraVectors();
 	}
 
 	// returns the view matrix calculated using Euler Angles and the LookAt Matrix
-	glm::mat4 GetViewMatrix()
+	mat4 GetViewMatrix()
 	{
-		return glm::lookAt(Position, Position + Front, Up);
+		//This sets the Y value manually to walk on the floor
+		Position = vec3(Position.x, 1.8f, Position.z);
+		return lookAt(Position, Position + Front, Up);
+
 	}
 	// processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 	// Called in ProcessInput. Alters
 	void ProcessKeyboard(Camera_Movement direction, float deltaTime)
 	{
 		float velocity = MovementSpeed * deltaTime;
+
+		//To create the illusion of walking on the ground, will eliminate the Y component of look, then multiply, to move on a flat plane
+
+		vec3 horizontalFront = normalize(vec3(Front.x, 0.0f, Front.z));
+		vec3 horizontalRight = normalize(vec3(Right.x, 0.0f, Right.z));
+
 		if (direction == FORWARD)
-			Position += Front * velocity;
+		{			
+			Position += horizontalFront * velocity;
+		}
 		if (direction == BACKWARD)
-			Position -= Front * velocity;
+		{			
+			Position -= horizontalFront * velocity;
+		}
 		if (direction == LEFT)
-			Position -= Right * velocity;
+		{
+			Position -= horizontalRight * velocity;
+		}
+
 		if (direction == RIGHT)
-			Position += Right * velocity;
+		{
+			Position += horizontalRight * velocity;
+		}
+
 	}
 
 	// processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -117,14 +138,14 @@ private:
 	void updateCameraVectors()
 	{
 		// calculate the new Front vector
-		glm::vec3 front;
-		front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-		front.y = sin(glm::radians(Pitch));
-		front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-		Front = glm::normalize(front);
+		vec3 front;
+		front.x = cos(radians(Yaw)) * cos(radians(Pitch));
+		front.y = sin(radians(Pitch));
+		front.z = sin(radians(Yaw)) * cos(radians(Pitch));
+		Front = normalize(front);
 		// also re-calculate the Right and Up vector
-		Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		Up = glm::normalize(glm::cross(Right, Front));
+		Right = normalize(cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		Up = normalize(cross(Right, Front));
 	}
 };
 #endif

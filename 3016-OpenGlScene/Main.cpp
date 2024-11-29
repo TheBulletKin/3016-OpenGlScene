@@ -14,7 +14,8 @@
 
 /* TODO
 * Create a flat plane
-
+* Walk on plane
+* Walk speed independant of look angle
 
 
 */
@@ -34,7 +35,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 //--- Camera values
-Camera camera(vec3(0.0f, 1.0f, 3.0f));
+Camera camera(vec3(0.0f, 1.8f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
