@@ -11,6 +11,16 @@
 #include "Camera.h"
 #include "Shader.h"
 
+
+/* TODO
+* Create a flat plane
+
+
+
+*/
+
+using namespace glm;
+
 //--- Callback method definitions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -24,7 +34,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 //--- Camera values
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(vec3(0.0f, 1.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -32,6 +42,8 @@ bool firstMouse = true;
 //--- Time tracking
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
+
+
 
 int main()
 {
@@ -77,11 +89,11 @@ int main()
 
 
 	//--- Create Shader class passing in vert and frag files
-	Shader ourShader("7.4.camera.vs", "7.4.camera.fs");
+	Shader ourShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
 
 	//--- Vertex Data for cube
 	// remember that the coordinate is screen space, -1 - 1
-	float vertices[] = {
+	float cubeVertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
 		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -126,17 +138,33 @@ int main()
 	};
 
 	//--- Duplicate cube positions
-	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f,  0.0f,  0.0f),
-		glm::vec3(2.0f,  5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f,  3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f,  2.0f, -2.5f),
-		glm::vec3(1.5f,  0.2f, -1.5f),
-		glm::vec3(-1.3f,  1.0f, -1.5f)
+	vec3 cubePositions[] = {
+		vec3(0.0f,  0.0f,  0.0f),
+		vec3(2.0f,  5.0f, -15.0f),
+		vec3(-1.5f, -2.2f, -2.5f),
+		vec3(-3.8f, -2.0f, -12.3f),
+		vec3(2.4f, -0.4f, -3.5f),
+		vec3(-1.7f,  3.0f, -7.5f),
+		vec3(1.3f, -2.0f, -2.5f),
+		vec3(1.5f,  2.0f, -2.5f),
+		vec3(1.5f,  0.2f, -1.5f),
+		vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+	//--- Plane vertices and indices
+
+
+	float planeVertices[] = {
+		//Positions             //Textures
+		0.5f, 0.0f, 0.5f,       1.0f, 1.0f, //top right
+		0.5f, 0.0f, -0.5f,      1.0f, 0.0f, //bottom right
+		-0.5f, 0.0f, -0.5f,     0.0f, 0.0f, //bottom left
+		-0.5f, 0.0f, 0.5f,      0.0f, 1.0f  //top left
+	};
+
+	unsigned int planeIndices[] = {
+		0, 1, 3, //First triangle
+		1, 2, 3  //Second triangle
 	};
 
 	//--- Vertex buffers and attributes
@@ -146,18 +174,22 @@ int main()
 	//VAO
 	// Holds references to the VBOs, as well as the configuration of the vertex attributes, which VBO holds which attribute, how it's laid out etc
 	//
-	unsigned int VAO, VBO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);  //Set the VAO as the currently bound one, proceeding changes will affect this VAO
 
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO); //Moves the vertex attribute data buffer to the Array Buffer on the GPU
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);  //Allocates the vertex data to the currently bound VBO
+	//--- Cube VAO and VBO
+
+	unsigned int cubeVAO, cubeVBO;
+	glGenVertexArrays(1, &cubeVAO);
+	glBindVertexArray(cubeVAO);  //Set the VAO as the currently bound one, proceeding changes will affect this VAO
+
+	glGenBuffers(1, &cubeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO); //Moves the vertex attribute data buffer to the Array Buffer on the GPU
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);  //Allocates the vertex data to the currently bound VBO
+
 
 	//--- Vertex attribute pointers
 	// Will tell OpenGL how to interpret the vertex buffer data.
 	// Relates to variables in the shader, like the first 3 relating to position, last two are texture coords.
-	
+
 	// First parameter: Attribute location for the shader, should match 'location = 0' in the vertex shader
 	// Second parameter: Each vertex has 3 values, xyz coordinates in this case. Colour for instance can bring it to 4
 	// Third parameter: Type of each component is float (each coordinate)
@@ -171,6 +203,32 @@ int main()
 	// texture coord attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+
+	//--- Plane VAO, EBO and VBO
+	unsigned int planeVAO, planeVBO, planeEBO;
+	glGenVertexArrays(1, &planeVAO);
+	glBindVertexArray(planeVAO);
+
+	glGenBuffers(1, &planeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &planeEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planeEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndices), planeIndices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+
+
 
 
 	//--- Texture Loading
@@ -201,9 +259,19 @@ int main()
 	// load image, create texture and generate mipmaps
 	int imageWidth, imageHeight, nrChannels;
 	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-	unsigned char* data = stbi_load("resources/textures/container.jpg", &imageWidth, &imageHeight, &nrChannels, 0);
+	unsigned char* data = stbi_load("Media/container.jpg", &imageWidth, &imageHeight, &nrChannels, 0);
 	if (data)
 	{
+		//Generation of texture from retrieved texture data
+		// TExture buffer used
+		// Mipmap level
+		// Image colour format
+		// X dimension of the texture
+		// y dimension of the texture
+		// set to 0, a legacy feature thing
+		// Source image colour format
+		// The form of data in which we stored the original image
+		// The image data itself
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
@@ -214,37 +282,11 @@ int main()
 	stbi_image_free(data);
 
 
-	//Second texture
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-
-	// load image, create texture and generate mipmaps
-	data = stbi_load("resources/textures/awesomeface.png", &imageWidth, &imageHeight, &nrChannels, 0);
-	if (data)
-	{
-		// note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
 	//--- Set the sampler on each shader to the correct texture
 	ourShader.Use();
-	//Attaches texture unit 0 and 1
+	//Attaches texture unit 0 and 1. Which is properly defined in the render loop
 	ourShader.setInt("texture1", 0);
-	ourShader.setInt("texture2", 1);
+	//ourShader.setInt("texture2", 1);
 
 	//--- Coordinate space and 3D
 	// OpenGL expects all the vertices that we want visible to be in normalised device coordinates -1 - 1.
@@ -267,7 +309,7 @@ int main()
 	* See a better explanation at https://learnopengl.com/Getting-started/Coordinate-Systems
 	*
 	*/
-	
+
 
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))
@@ -289,14 +331,13 @@ int main()
 		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1); //Like last time, future operations will affect this texture
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
+
 
 		//--- Activate shader
 		ourShader.Use();
 
 		//--- Pass updated projection matrix to vertex shaders
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		mat4 projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		ourShader.setMat4("projection", projection);
 
 		//--- Pass updated view matrix to vertex shaders
@@ -304,30 +345,44 @@ int main()
 		//The camera / view space are all the vector coordinates as seen from the camera's perspective as the origin of the scene
 		//THe view matrix transforms all world coordinates into view coordinates relative to the camera's position and direction.
 
-		glm::mat4 view = camera.GetViewMatrix();
+		mat4 view = camera.GetViewMatrix();
 		ourShader.setMat4("view", view);
 
 		//--- Render multiple boxes
-		glBindVertexArray(VAO);
+		glBindVertexArray(cubeVAO);
 		for (unsigned int i = 0; i < 10; i++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
-			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-			model = glm::translate(model, cubePositions[i]);
+			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
+			model = translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
 			ourShader.setMat4("model", model);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
 		}
 
+		glBindVertexArray(planeVAO);
+
+
+		mat4 model = mat4(1.0f);
+		model = scale(model, vec3(20.0f, 0.0f, 20.0f));
+		ourShader.setMat4("model", model);
+
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	///glDeleteVertexArrays(1, &cubeVAO);
+	//glDeleteBuffers(1, &cubeVBO);
+	glDeleteVertexArrays(1, &planeVAO);
+	glDeleteBuffers(1, &planeVBO);
+
 
 	glfwTerminate();
 	return 0;
