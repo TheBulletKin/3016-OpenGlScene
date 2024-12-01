@@ -7,20 +7,27 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <map>
+#include <vector>
 
 #include "Camera.h"
+#include "CustomSceneObject.h"
 #include "Shader.h"
 
 
 /* TODO
-* Create a flat plane
-* Walk on plane
-* Walk speed independant of look angle
+* Just added classes to make object creation much easier and allow for a sort of scene 'hierarchy'
+* Next step is to work on parabolic physics movement
+* Regular dictionary will hold static objects
+* Movable objects will be its own list of a different type, a subclass of a simple object
+* Each object needs to hold its current position
+* (figure the rest out later)
 
 
 */
 
 using namespace glm;
+using namespace std;
 
 //--- Callback method definitions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -50,10 +57,7 @@ int main()
 {
 	//--- Initialize GLFW
 	glfwInit();
-	//Set the version number of GLFW, prevents running without correct version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -68,6 +72,11 @@ int main()
 		return -1;
 	}
 
+	//--- Set the version number of GLFW, prevents running without correct version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	//--- Set window as current and set callback methods
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -77,7 +86,6 @@ int main()
 	//--- Lock cursor and track mouse movements
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
 	//--- Load openGL function pointers to Glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -86,8 +94,8 @@ int main()
 	}
 
 	//--- Enable depth buffer
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
-
 
 	//--- Create Shader class passing in vert and frag files
 	Shader ourShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
@@ -153,14 +161,12 @@ int main()
 	};
 
 	//--- Plane vertices and indices
-
-
 	float planeVertices[] = {
 		//Positions             //Textures
-		0.5f, 0.0f, 0.5f,       1.0f, 1.0f, //top right
-		0.5f, 0.0f, -0.5f,      1.0f, 0.0f, //bottom right
-		-0.5f, 0.0f, -0.5f,     0.0f, 0.0f, //bottom left
-		-0.5f, 0.0f, 0.5f,      0.0f, 1.0f  //top left
+		0.5f, 0.5f, 0.0f,       1.0f, 1.0f, //top right
+		0.5f, -0.5f, 0.0f,      1.0f, 0.0f, //bottom right
+		-0.5f, -0.5f, 0.0f,     0.0f, 0.0f, //bottom left
+		-0.5f, 0.5f, 0.0f,      0.0f, 1.0f  //top left
 	};
 
 	unsigned int planeIndices[] = {
@@ -168,68 +174,35 @@ int main()
 		1, 2, 3  //Second triangle
 	};
 
-	//--- Vertex buffers and attributes
-	//VBO
-	// A buffer holding all the vertex attribute data shown above, held on the GPU, but has no meaning at the moment
-	//
-	//VAO
-	// Holds references to the VBOs, as well as the configuration of the vertex attributes, which VBO holds which attribute, how it's laid out etc
-	//
 
-	//--- Cube VAO and VBO
-
-	unsigned int cubeVAO, cubeVBO;
-	glGenVertexArrays(1, &cubeVAO);
-	glBindVertexArray(cubeVAO);  //Set the VAO as the currently bound one, proceeding changes will affect this VAO
-
-	glGenBuffers(1, &cubeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO); //Moves the vertex attribute data buffer to the Array Buffer on the GPU
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);  //Allocates the vertex data to the currently bound VBO
+	//--- Scene object containers
+	map<string, CustomSceneObject*> sceneObjectDictionary;
 
 
-	//--- Vertex attribute pointers
-	// Will tell OpenGL how to interpret the vertex buffer data.
-	// Relates to variables in the shader, like the first 3 relating to position, last two are texture coords.
+	//--- Cube object
+	CustomSceneObject* newSceneObject = new CustomSceneObject();
+	newSceneObject->PrepareAndBindVAO();
+	newSceneObject->PrepareAndBindVBO(cubeVertices, sizeof(cubeVertices), sizeof(cubeVertices) / (5 * sizeof(float))); //Because of 5 elements per vertex
+	newSceneObject->PrepareVertexAttributeArrays();
 
-	// First parameter: Attribute location for the shader, should match 'location = 0' in the vertex shader
-	// Second parameter: Each vertex has 3 values, xyz coordinates in this case. Colour for instance can bring it to 4
-	// Third parameter: Type of each component is float (each coordinate)
-	// Fourth parameter: NO normalisation is applied
-	// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
-	// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	sceneObjectDictionary["Cube Object"] = newSceneObject;
 
 	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-	//--- Plane VAO, EBO and VBO
-	unsigned int planeVAO, planeVBO, planeEBO;
-	glGenVertexArrays(1, &planeVAO);
-	glBindVertexArray(planeVAO);
+	//--- Ground plane object
+	newSceneObject = new CustomSceneObject();
+	newSceneObject->PrepareAndBindVAO();
+	newSceneObject->PrepareAndBindVBO(planeVertices, sizeof(planeVertices), sizeof(planeVertices) / (5 * sizeof(float)));
+	newSceneObject->PrepareAndBindEBO(planeIndices, sizeof(planeIndices), sizeof(planeIndices) / sizeof(planeIndices[0]));
+	newSceneObject->PrepareVertexAttributeArrays();
 
-	glGenBuffers(1, &planeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+	sceneObjectDictionary["Plane Object"] = newSceneObject;
 
-	glGenBuffers(1, &planeEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planeEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndices), planeIndices, GL_STATIC_DRAW);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-
-
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
 	//--- Texture Loading
@@ -237,6 +210,9 @@ int main()
 	unsigned int texture1;
 	glGenTextures(1, &texture1);
 	glBindTexture(GL_TEXTURE_2D, texture1);
+
+	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	/*With the texture bound we can change it's wrapping method
 		GL_CLAMP_TO_BORDER prevents the texture from overspilling
@@ -246,13 +222,11 @@ int main()
 	*/
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// -- TEXTURE FILTERING
+	
 	// Texture filtering allows for approximation of values based on neigbouring pixels.
 	// Nearest looks blocky, a point between two texels is simply the texture coordinate it is in, leads to a pixelly effect
 	// Linear performs interpolation between texels, so pixels between two texels are smoothened out
 
-	// Nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -285,9 +259,9 @@ int main()
 
 	//--- Set the sampler on each shader to the correct texture
 	ourShader.Use();
-	//Attaches texture unit 0 and 1. Which is properly defined in the render loop
+	//The texture sampler on the fragment shader is given value '0', meaning when we put that texture on texture unit 0, it will automatically use it
 	ourShader.setInt("texture1", 0);
-	//ourShader.setInt("texture2", 1);
+	
 
 	//--- Coordinate space and 3D
 	// OpenGL expects all the vertices that we want visible to be in normalised device coordinates -1 - 1.
@@ -312,9 +286,11 @@ int main()
 	*/
 
 
+
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))
 	{
+
 		//--- Deltatime logic
 		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
@@ -349,8 +325,8 @@ int main()
 		mat4 view = camera.GetViewMatrix();
 		ourShader.setMat4("view", view);
 
-		//--- Render multiple boxes
-		glBindVertexArray(cubeVAO);
+		//--- Render cubes		
+
 		for (unsigned int i = 0; i < 10; i++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
@@ -360,29 +336,33 @@ int main()
 			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
 			ourShader.setMat4("model", model);
 
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
+			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
 
-		glBindVertexArray(planeVAO);
-
-
 		mat4 model = mat4(1.0f);
-		model = scale(model, vec3(20.0f, 0.0f, 20.0f));
+		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+		model = scale(model, vec3(8.0f, 8.0f, 8.0f));
+
 		ourShader.setMat4("model", model);
 
+		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	///glDeleteVertexArrays(1, &cubeVAO);
-	//glDeleteBuffers(1, &cubeVBO);
-	glDeleteVertexArrays(1, &planeVAO);
-	glDeleteBuffers(1, &planeVBO);
+	for (auto& pair : sceneObjectDictionary)
+	{
+		CustomSceneObject* object = pair.second;
+		if (object)
+		{
+			object->CleanUp();
+		}
+	}
+
+	sceneObjectDictionary.clear();
 
 
 	glfwTerminate();
@@ -444,3 +424,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
+
+
+
