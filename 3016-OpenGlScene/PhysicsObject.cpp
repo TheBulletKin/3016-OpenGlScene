@@ -6,18 +6,26 @@ void PhysicsObject::Launch(vec3 initialVelocity, vec3 initialPosition, float ini
 	this->initialPosition = initialPosition;
 	this->currentPosition = initialPosition;
 	this->initialTime = initialTime;
-	this->currentTime = 0.0f;
+	
+	this->timeSinceStart = 0.0f;
+
+	
 }
 
-bool PhysicsObject::UpdatePosition(float deltaTime) {
-	currentTime += deltaTime;
-	currentPosition.x = initialPosition.x + initialVelocity.x * currentTime;
+void PhysicsObject::UpdatePosition(float deltaTime) {
+	timeSinceStart += deltaTime;
+	currentPosition.x = initialPosition.x + initialVelocity.x * timeSinceStart;
 
-	currentPosition.z = initialPosition.z + initialVelocity.z * currentTime;
+	currentPosition.z = initialPosition.z + initialVelocity.z * timeSinceStart;
 
-	currentPosition.y = initialPosition.y + initialVelocity.y * currentTime - (0.5 * gravity * pow(currentTime, 2));
-	if (currentPosition.y < 0.0f) {
-		currentPosition.y = 0.0f;	
+	currentPosition.y = initialPosition.y + initialVelocity.y * timeSinceStart - (0.5 * gravity * pow(timeSinceStart, 2));
+	
+	
+}
+
+bool PhysicsObject::ShouldDestroy() {
+	if (currentPosition.y < 0.0f)
+	{
 		return true;
 	}
 	return false;

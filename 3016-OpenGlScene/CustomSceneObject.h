@@ -14,8 +14,9 @@ class CustomSceneObject
 public:
 	CustomSceneObject();
 	~CustomSceneObject();
-	void PrepareAndBindVAO();
+	void PrepareAndBindVAO();	
 	void PrepareAndBindVBO(float vertices[], size_t verticesDataSize, int verticesCount);
+	void PrepareAndBindVBO(unsigned int VBO, int verticesCount);
 	void PrepareAndBindEBO(unsigned int indices[], size_t indicesDataSize, int indicesCount);
 	void PrepareVertexAttributeArrays();
 	void DrawMesh();

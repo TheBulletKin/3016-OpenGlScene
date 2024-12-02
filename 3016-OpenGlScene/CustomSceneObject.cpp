@@ -11,7 +11,7 @@ CustomSceneObject::CustomSceneObject() {
 }
 
 CustomSceneObject::~CustomSceneObject() {
-	CleanUp();
+	
 }
 
 //--- Vertex buffers and attributes
@@ -41,6 +41,11 @@ void CustomSceneObject::PrepareAndBindVBO(float vertices[], size_t verticesDataS
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	this->verticesCount = verticesCount;
 	glBufferData(GL_ARRAY_BUFFER, verticesDataSize, vertices, GL_STATIC_DRAW);
+}
+
+void CustomSceneObject::PrepareAndBindVBO(unsigned int VBO, int verticesCount) {
+	this->VBO = VBO;
+	this->verticesCount = verticesCount;
 }
 
 /// <summary>
@@ -92,8 +97,16 @@ void CustomSceneObject::DrawMesh() {
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 	}
 	else {
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
+		glBindVertexArray(VAO);	
+		GLenum error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error: " << error << endl;
+		}
+		glDrawArrays(GL_TRIANGLES, 0, verticesCount);	
+		error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error: " << error << endl;
+		}
 	}
 }
 

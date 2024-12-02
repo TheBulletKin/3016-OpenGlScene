@@ -223,6 +223,13 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	//--- Projectile spawning variables
+	vec3 radiusCentre = vec3(5.0f, 0.0f, 2.0f);
+
 	//--- Texture Loading
 	//First texture
 	unsigned int texture1;
@@ -371,34 +378,55 @@ int main()
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
 			PhysicsObject* newProjectileObject = new PhysicsObject();
-			newProjectileObject->VAO = ProjectileCubeVAO;
-			newProjectileObject->VBO = ProjectileCubeVBO;
+			newProjectileObject->VAO = ProjectileCubeVAO;			
+			newProjectileObject->PrepareAndBindVBO(ProjectileCubeVBO, sizeof(cubeVertices) / (5 * sizeof(float)));
+			
+		
+			GLenum error;
+			while ((error = glGetError()) != GL_NO_ERROR) {
+				cerr << "OpenGL error after VBO binding: " << error << endl;
+			}
 
 			newProjectileObject->Launch(vec3(0.2f, 6.0f, 0.2f), vec3(5.0f, 0.0f, 2.0f), currentFrame);
 
 			projectileObjects.push_back(newProjectileObject);
 
-			projectileSpawnTimer -= projectileSpawnCooldown;
+			projectileSpawnTimer = 0.0f;
 		}
 
 		for (size_t i = 0; i < projectileObjects.size();) {
 			PhysicsObject* projectileObject = projectileObjects[i];
+			if (projectileObject != NULL)
+			{
+				projectileObject->UpdatePosition(deltaTime);
 
-			bool shouldDestroy = projectileObject->UpdatePosition(deltaTime);
+				if (projectileObject->ShouldDestroy()) {					
+					delete projectileObject;
+					projectileObjects.erase(projectileObjects.begin() + i);
 
-			if (shouldDestroy) {				
-				delete projectileObject;
-				projectileObjects.erase(projectileObjects.begin() + i);
+				}
+				else {
+					mat4 projectileModel = mat4(1.0f);
+					projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
+					ourShader.setMat4("model", projectileModel);
+
+					GLenum error;
+					while ((error = glGetError()) != GL_NO_ERROR) {
+						cerr << "OpenGL error pre render: " << error << endl;
+					}
+					projectileObject->DrawMesh();
+					
+					
+					error;
+					while ((error = glGetError()) != GL_NO_ERROR) {
+						cerr << "OpenGL error post render: " << error << endl;
+					}
+
+					++i;
+				}
 			}
-			else {
-				mat4 projectileModel = mat4(1.0f);
-				projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
-				ourShader.setMat4("model", projectileModel);
 
-				projectileObject->DrawMesh();
-
-				++i;
-			}
+			
 		}
 
 
@@ -416,7 +444,13 @@ int main()
 		}
 	}
 
+	for (PhysicsObject* projectile : projectileObjects)
+	{
+		projectile->CleanUp();
+	}
+
 	sceneObjectDictionary.clear();
+	projectileObjects.clear();
 
 
 	glfwTerminate();

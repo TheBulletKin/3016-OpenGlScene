@@ -12,13 +12,14 @@ public:
 	PhysicsObject() : CustomSceneObject() {};
 	~PhysicsObject() {};
 	void Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime);
-	bool UpdatePosition(float deltaTime);
+	void UpdatePosition(float deltaTime);
+	bool ShouldDestroy();
 
 	vec3 initialVelocity;
 	vec3 initialPosition;
 	vec3 currentPosition;
 	float initialTime;
-	float currentTime;
+	float timeSinceStart;
 	float gravity = 9.81f;
 private:
 	
