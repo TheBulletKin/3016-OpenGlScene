@@ -9,6 +9,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <math.h>
+#include <random>
 
 #include "Camera.h"
 #include "CustomSceneObject.h"
@@ -17,12 +19,9 @@
 
 
 /* TODO
-* Just added classes to make object creation much easier and allow for a sort of scene 'hierarchy'
-* Next step is to work on parabolic physics movement
-* Regular dictionary will hold static objects
-* Movable objects will be its own list of a different type, a subclass of a simple object
-* Each object needs to hold its current position
-* (figure the rest out later)
+* Physics projectil objects done
+* Figure out random location and trajectory spawning
+* Next up will be hit detection, rather complicated
 
 
 */
@@ -228,7 +227,8 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	//--- Projectile spawning variables
-	vec3 radiusCentre = vec3(5.0f, 0.0f, 2.0f);
+	vec3 spawnCentre = vec3(5.0f, 0.0f, 2.0f);
+	float spawnRadius = 10.0f;
 
 	//--- Texture Loading
 	//First texture
@@ -352,7 +352,6 @@ int main()
 		ourShader.setMat4("view", view);
 
 		//--- Render cubes		
-
 		for (unsigned int i = 0; i < 10; i++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
@@ -373,6 +372,11 @@ int main()
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
+		//-- Random stuff for projectile generation
+		random_device rd;
+		mt19937 gen(rd());  
+		uniform_real_distribution<> dis(0.0, 1.0);
+
 		//-- Projectile spawning
 		projectileSpawnTimer += deltaTime;
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
@@ -387,7 +391,42 @@ int main()
 				cerr << "OpenGL error after VBO binding: " << error << endl;
 			}
 
-			newProjectileObject->Launch(vec3(0.2f, 6.0f, 0.2f), vec3(5.0f, 0.0f, 2.0f), currentFrame);
+			double pi = acos(-1);
+
+			//Rand does not return a normalised value, it could return anything from 0 to potentially 32767. Divide by the maximum value to get a normalised value
+			//2 * pi represents a full circle in radians, so dividing that by the random value gives a sector
+			double angle = dis(gen) * 2.0 * pi;
+
+			// Generate a random radius using sqrt method for uniform distribution
+			double r = spawnRadius * sqrt(dis(gen));
+
+			// Convert to Cartesian coordinates
+			double x = spawnCentre.x + r * cos(angle);
+			double z = spawnCentre.z + r * sin(angle);
+			double y = spawnCentre.y;
+
+			vec3 spawnPosition = vec3(x, y, z);
+
+			//Value between 0 and 1 as before, multiply by what is 45 degrees in radians, means the resulting angle will be less than 45. Could set it to 2*pi for a full circle for instance
+			//Vertical angle value
+			float theta = dis(gen) * ((2 * pi) / 3);
+
+			//Horizontal angle value
+			float azimuth = dis(gen) * ((2 * pi) / 3);
+
+			// Convert to Cartesian coordinates (3D vector)
+			float vx = sin(theta) * cos(azimuth);
+			float vy = sin(theta) * sin(azimuth);
+			float vz = cos(theta);
+
+			vec3 spawnVelocity = normalize(vec3(vx, abs(vy), vz));
+			spawnVelocity = spawnVelocity * 10.0f;
+			
+
+			cout << "Random Point: (" << x << ", " << y << ", " << spawnCentre.z << ")\n";
+			cout << "Random Velocity: (" << vx << ", " << abs(vy) << ", " << vz << ")\n";
+
+			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame);
 
 			projectileObjects.push_back(newProjectileObject);
 
@@ -414,6 +453,7 @@ int main()
 					while ((error = glGetError()) != GL_NO_ERROR) {
 						cerr << "OpenGL error pre render: " << error << endl;
 					}
+
 					projectileObject->DrawMesh();
 					
 					
@@ -512,6 +552,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
+
+
 
 
 
