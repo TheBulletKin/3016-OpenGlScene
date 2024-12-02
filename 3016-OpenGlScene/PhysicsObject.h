@@ -10,9 +10,9 @@ class PhysicsObject : public CustomSceneObject
 {
 public:
 	PhysicsObject() : CustomSceneObject() {};
-	~PhysicsObject();
+	~PhysicsObject() {};
 	void Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime);
-	void UpdatePosition(float deltaTime);
+	bool UpdatePosition(float deltaTime);
 
 	vec3 initialVelocity;
 	vec3 initialPosition;

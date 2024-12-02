@@ -9,7 +9,7 @@ void PhysicsObject::Launch(vec3 initialVelocity, vec3 initialPosition, float ini
 	this->currentTime = 0.0f;
 }
 
-void PhysicsObject::UpdatePosition(float deltaTime) {
+bool PhysicsObject::UpdatePosition(float deltaTime) {
 	currentTime += deltaTime;
 	currentPosition.x = initialPosition.x + initialVelocity.x * currentTime;
 
@@ -17,6 +17,8 @@ void PhysicsObject::UpdatePosition(float deltaTime) {
 
 	currentPosition.y = initialPosition.y + initialVelocity.y * currentTime - (0.5 * gravity * pow(currentTime, 2));
 	if (currentPosition.y < 0.0f) {
-		currentPosition.y = 0.0f;		
+		currentPosition.y = 0.0f;	
+		return true;
 	}
+	return false;
 }

@@ -207,6 +207,21 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	//--- Projectile Object Setup
+	unsigned int ProjectileCubeVAO, ProjectileCubeVBO;
+	glGenVertexArrays(1, &ProjectileCubeVAO);
+	glBindVertexArray(ProjectileCubeVAO);
+
+	glGenBuffers(1, &ProjectileCubeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, ProjectileCubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	//--- Texture Loading
 	//First texture
@@ -225,7 +240,7 @@ int main()
 	*/
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	
+
 	// Texture filtering allows for approximation of values based on neigbouring pixels.
 	// Nearest looks blocky, a point between two texels is simply the texture coordinate it is in, leads to a pixelly effect
 	// Linear performs interpolation between texels, so pixels between two texels are smoothened out
@@ -264,7 +279,7 @@ int main()
 	ourShader.Use();
 	//The texture sampler on the fragment shader is given value '0', meaning when we put that texture on texture unit 0, it will automatically use it
 	ourShader.setInt("texture1", 0);
-	
+
 
 	//--- Coordinate space and 3D
 	// OpenGL expects all the vertices that we want visible to be in normalised device coordinates -1 - 1.
@@ -355,27 +370,35 @@ int main()
 		projectileSpawnTimer += deltaTime;
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
-			PhysicsObject* newProjectileObject = new PhysicsObject(); 
-			newProjectileObject->PrepareAndBindVAO();
-			newProjectileObject->PrepareAndBindVBO(cubeVertices, sizeof(cubeVertices), sizeof(cubeVertices) / (5 * sizeof(float))); //Because of 5 elements per vertex
-			newProjectileObject->PrepareVertexAttributeArrays();
+			PhysicsObject* newProjectileObject = new PhysicsObject();
+			newProjectileObject->VAO = ProjectileCubeVAO;
+			newProjectileObject->VBO = ProjectileCubeVBO;
 
-			newProjectileObject->Launch(vec3(0.2f, 1.2f, 0.2f), vec3(5.0f, 0.0f, 2.0f), currentFrame);
+			newProjectileObject->Launch(vec3(0.2f, 6.0f, 0.2f), vec3(5.0f, 0.0f, 2.0f), currentFrame);
 
 			projectileObjects.push_back(newProjectileObject);
 
 			projectileSpawnTimer -= projectileSpawnCooldown;
 		}
 
-		for (PhysicsObject* projectileObject : projectileObjects)
-		{
-			projectileObject->UpdatePosition(deltaTime);
+		for (size_t i = 0; i < projectileObjects.size();) {
+			PhysicsObject* projectileObject = projectileObjects[i];
 
-			mat4 projectileModel = mat4(1.0f);
-			projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
-			ourShader.setMat4("model", projectileModel);
+			bool shouldDestroy = projectileObject->UpdatePosition(deltaTime);
 
-			projectileObject->DrawMesh();
+			if (shouldDestroy) {				
+				delete projectileObject;
+				projectileObjects.erase(projectileObjects.begin() + i);
+			}
+			else {
+				mat4 projectileModel = mat4(1.0f);
+				projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
+				ourShader.setMat4("model", projectileModel);
+
+				projectileObject->DrawMesh();
+
+				++i;
+			}
 		}
 
 
