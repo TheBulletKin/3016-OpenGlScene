@@ -21,7 +21,7 @@
 /* TODO
 * Physics projectil objects done
 * Figure out random location and trajectory spawning
-* Next up will be hit detection, rather complicated
+* Make control variables so I can control the speed, dispersion and launch angle easily
 
 
 */
@@ -227,8 +227,8 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	//--- Projectile spawning variables
-	vec3 spawnCentre = vec3(5.0f, 0.0f, 2.0f);
-	float spawnRadius = 10.0f;
+	vec3 spawnCentre = vec3(0.0f, 0.0f, 0.0f);
+	float spawnRadius = 3.0f;
 
 	//--- Texture Loading
 	//First texture
@@ -310,7 +310,7 @@ int main()
 	*
 	*/
 
-	float projectileSpawnCooldown = 1.0f;
+	float projectileSpawnCooldown = 0.2f;
 	float projectileSpawnTimer = 0.0f;
 
 	//--- Constant render loop
@@ -364,6 +364,7 @@ int main()
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
 
+		//--- Render Plane
 		mat4 model = mat4(1.0f);
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 		model = scale(model, vec3(8.0f, 8.0f, 8.0f));
@@ -409,22 +410,21 @@ int main()
 
 			//Value between 0 and 1 as before, multiply by what is 45 degrees in radians, means the resulting angle will be less than 45. Could set it to 2*pi for a full circle for instance
 			//Vertical angle value
-			float theta = dis(gen) * ((2 * pi) / 3);
+			float theta = dis(gen) * (pi / 4);
 
 			//Horizontal angle value
-			float azimuth = dis(gen) * ((2 * pi) / 3);
+			float azimuth = dis(gen) * (2 * pi);
 
-			// Convert to Cartesian coordinates (3D vector)
 			float vx = sin(theta) * cos(azimuth);
-			float vy = sin(theta) * sin(azimuth);
-			float vz = cos(theta);
+			float vy = cos(theta);
+			float vz = sin(theta) * sin(azimuth);
 
-			vec3 spawnVelocity = normalize(vec3(vx, abs(vy), vz));
-			spawnVelocity = spawnVelocity * 10.0f;
-			
+			vec3 spawnVelocity = normalize(vec3(vx, vy, vz));
+			spawnVelocity = spawnVelocity * 10.0f;			
 
-			cout << "Random Point: (" << x << ", " << y << ", " << spawnCentre.z << ")\n";
-			cout << "Random Velocity: (" << vx << ", " << abs(vy) << ", " << vz << ")\n";
+			//cout << "Random Point: (" << x << ", " << y << ", " << z << ")\n";
+			//cout << "Random Velocity: (" << vx << ", " << abs(vy) << ", " << vz << ")\n";
+
 
 			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame);
 
@@ -446,7 +446,7 @@ int main()
 				}
 				else {
 					mat4 projectileModel = mat4(1.0f);
-					projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
+					projectileModel = translate(projectileModel, projectileObject->initialPosition + (projectileObject->currentPosition - projectileObject->initialPosition));
 					ourShader.setMat4("model", projectileModel);
 
 					GLenum error;
