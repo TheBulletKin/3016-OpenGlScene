@@ -12,6 +12,7 @@
 
 #include "Camera.h"
 #include "CustomSceneObject.h"
+#include "PhysicsObject.h"
 #include "Shader.h"
 
 
@@ -178,6 +179,8 @@ int main()
 	//--- Scene object containers
 	map<string, CustomSceneObject*> sceneObjectDictionary;
 
+	vector<PhysicsObject*> projectileObjects;
+
 
 	//--- Cube object
 	CustomSceneObject* newSceneObject = new CustomSceneObject();
@@ -285,7 +288,8 @@ int main()
 	*
 	*/
 
-
+	float projectileSpawnCooldown = 1.0f;
+	float projectileSpawnTimer = 0.0f;
 
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))
@@ -346,6 +350,33 @@ int main()
 		ourShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
+
+		//-- Projectile spawning
+		projectileSpawnTimer += deltaTime;
+		if (projectileSpawnTimer >= projectileSpawnCooldown)
+		{
+			PhysicsObject* newProjectileObject = new PhysicsObject(); 
+			newProjectileObject->PrepareAndBindVAO();
+			newProjectileObject->PrepareAndBindVBO(cubeVertices, sizeof(cubeVertices), sizeof(cubeVertices) / (5 * sizeof(float))); //Because of 5 elements per vertex
+			newProjectileObject->PrepareVertexAttributeArrays();
+
+			newProjectileObject->Launch(vec3(0.2f, 1.2f, 0.2f), vec3(5.0f, 0.0f, 2.0f), currentFrame);
+
+			projectileObjects.push_back(newProjectileObject);
+
+			projectileSpawnTimer -= projectileSpawnCooldown;
+		}
+
+		for (PhysicsObject* projectileObject : projectileObjects)
+		{
+			projectileObject->UpdatePosition(deltaTime);
+
+			mat4 projectileModel = mat4(1.0f);
+			projectileModel = translate(projectileModel, projectileObject->currentPosition - projectileObject->initialPosition);
+			ourShader.setMat4("model", projectileModel);
+
+			projectileObject->DrawMesh();
+		}
 
 
 		//--- Swap buffers to render to screen, poll IO events
