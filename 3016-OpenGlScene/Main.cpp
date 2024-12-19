@@ -17,6 +17,12 @@
 #include "PhysicsObject.h"
 #include "Shader.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+
+
 
 /* TODO
 * Physics projectil objects done
