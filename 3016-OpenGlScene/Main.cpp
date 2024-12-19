@@ -47,6 +47,15 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+//--- Proc gen globals
+const unsigned int RENDER_DISTANCE = 128;
+const unsigned int MAP_SIZE = RENDER_DISTANCE * RENDER_DISTANCE;
+
+//Chunks across one dimension
+const int squaresRow = RENDER_DISTANCE - 1;
+const int trianglesPerSquare = 2;
+const int trianglesGrid = squaresRow * squaresRow * trianglesPerSquare;
+
 //--- Camera values
 Camera camera(vec3(0.0f, 1.8f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -103,8 +112,8 @@ int main()
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
 
-	//--- Create Shader class passing in vert and frag files
-	Shader ourShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
+	//--- Create shader for base objects
+	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
 
 	//--- Vertex Data for cube
 	// remember that the coordinate is screen space, -1 - 1
@@ -289,9 +298,9 @@ int main()
 
 
 	//--- Set the sampler on each shader to the correct texture
-	ourShader.Use();
+	TexturedObjectShader.Use();
 	//The texture sampler on the fragment shader is given value '0', meaning when we put that texture on texture unit 0, it will automatically use it
-	ourShader.setInt("texture1", 0);
+	TexturedObjectShader.setInt("texture1", 0);
 
 
 	//--- Coordinate space and 3D
@@ -319,6 +328,121 @@ int main()
 	float projectileSpawnCooldown = 0.2f;
 	float projectileSpawnTimer = 0.0f;
 
+	//--- Procedural terrain generation
+	
+	// TODO TODAY
+	// Create a new vertex shader and figure out how itll work with the shader class and multiple programs
+	// Research when different shaders should be used
+	// Eventually look at how buffers and stuff are handled in the lab scripts as they may make mine easier to manage. Just study how it differs to mine.
+	// Consider moving stuff into multiple methods as its getting really crazy
+	// Look back over code to remind myself how it works
+
+	//--- Create shader for terrain
+	//Needed because terrain does not use textures like base objects
+
+	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
+	
+	//Generation of height map vertices
+	GLfloat terrainVertices[MAP_SIZE][6];
+
+	//Positions to start drawing from
+	float drawingStartPosition = 1.0f;
+	float columnVerticesOffset = drawingStartPosition;
+	float rowVerticesOffset = drawingStartPosition;
+
+	int rowIndex = 0;
+
+	for (int i = 0; i < MAP_SIZE; i++)
+	{
+		//Generation of x & z vertices for horizontal plane
+		terrainVertices[i][0] = columnVerticesOffset;
+		terrainVertices[i][1] = 0.0f;
+		terrainVertices[i][2] = rowVerticesOffset;
+
+		//Colour
+		terrainVertices[i][3] = 0.0f;
+		terrainVertices[i][4] = 0.75f;
+		terrainVertices[i][5] = 0.25f;
+
+		//Shifts x position across for next triangle along grid
+		columnVerticesOffset = columnVerticesOffset + -0.0625f;
+
+		//Indexing of each chunk within row
+		rowIndex++;
+		//True when all triangles of the current row have been generated
+		if (rowIndex == RENDER_DISTANCE)
+		{
+			//Resets for next row of triangles
+			rowIndex = 0;
+			//Resets x position for next row of triangles
+			columnVerticesOffset = drawingStartPosition;
+			//Shifts y position
+			rowVerticesOffset = rowVerticesOffset + -0.0625f;
+		}
+	}
+
+	//Generation of height map indices
+	GLuint terrainIndices[trianglesGrid][3];
+
+	//Positions to start mapping indices from
+	int columnIndicesOffset = 0;
+	int rowIndicesOffset = 0;
+
+	//Generation of map indices in the form of chunks (1x1 right angle triangle squares)
+	rowIndex = 0;
+	for (int i = 0; i < trianglesGrid - 1; i += 2)
+	{
+		terrainIndices[i][0] = columnIndicesOffset + rowIndicesOffset; //top left
+		terrainIndices[i][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
+		terrainIndices[i][1] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
+
+		terrainIndices[i + 1][0] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
+		terrainIndices[i + 1][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
+		terrainIndices[i + 1][1] = 1 + RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom right
+
+		//Shifts x position across for next chunk along grid
+		columnIndicesOffset = columnIndicesOffset + 1;
+
+		//Indexing of each chunk within row
+		rowIndex++;
+
+		//True when all chunks of the current row have been generated
+		if (rowIndex == squaresRow)
+		{
+			//Resets for next row of chunks
+			rowIndex = 0;
+			//Resets x position for next row of chunks
+			columnIndicesOffset = 0;
+			//Shifts y position
+			rowIndicesOffset = rowIndicesOffset + RENDER_DISTANCE;
+		}
+	}
+
+	//--- Buffer generation for proc gen
+	unsigned int ProcGenVAO, ProcGenVBO, ProcGenEBO;
+	glGenVertexArrays(1, &ProcGenVAO);
+	glBindVertexArray(ProcGenVAO);
+
+	glGenBuffers(1, &ProcGenVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, ProcGenVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &ProcGenEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProcGenEBO);	
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(terrainIndices), terrainIndices, GL_STATIC_DRAW);
+
+	//Position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	//Colours
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -343,11 +467,11 @@ int main()
 
 
 		//--- Activate shader
-		ourShader.Use();
+		TexturedObjectShader.Use();
 
 		//--- Pass updated projection matrix to vertex shaders
 		mat4 projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		ourShader.setMat4("projection", projection);
+		TexturedObjectShader.setMat4("projection", projection);
 
 		//--- Pass updated view matrix to vertex shaders
 		//--Creating cameras
@@ -355,7 +479,7 @@ int main()
 		//THe view matrix transforms all world coordinates into view coordinates relative to the camera's position and direction.
 
 		mat4 view = camera.GetViewMatrix();
-		ourShader.setMat4("view", view);
+		TexturedObjectShader.setMat4("view", view);
 
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
@@ -365,7 +489,7 @@ int main()
 			model = translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
 			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
-			ourShader.setMat4("model", model);
+			TexturedObjectShader.setMat4("model", model);
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
@@ -375,7 +499,7 @@ int main()
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 		model = scale(model, vec3(8.0f, 8.0f, 8.0f));
 
-		ourShader.setMat4("model", model);
+		TexturedObjectShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
@@ -453,7 +577,7 @@ int main()
 				else {
 					mat4 projectileModel = mat4(1.0f);
 					projectileModel = translate(projectileModel, projectileObject->initialPosition + (projectileObject->currentPosition - projectileObject->initialPosition));
-					ourShader.setMat4("model", projectileModel);
+					TexturedObjectShader.setMat4("model", projectileModel);
 
 					GLenum error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
@@ -473,6 +597,27 @@ int main()
 			}
 
 			
+		}
+
+		//Configure procedural generation shader attributes
+		ProceduralObjectShader.Use();
+
+		mat4 terrainModel = mat4(1.0f);
+		terrainModel = scale(terrainModel, vec3(2.0f, 2.0f, 2.0f));
+		//Looking straight forward
+		terrainModel = rotate(terrainModel, radians(0.0f), vec3(1.0f, 0.0f, 0.0f));
+		//Elevation to look upon terrain
+		terrainModel = translate(terrainModel, vec3(0.0f, -2.f, -1.5f));
+		ProceduralObjectShader.setMat4("model", terrainModel);
+
+		ProceduralObjectShader.setMat4("projection", projection);
+		ProceduralObjectShader.setMat4("view", view);
+
+		glBindVertexArray(ProcGenVAO);
+		glDrawElements(GL_TRIANGLES, MAP_SIZE * 32, GL_UNSIGNED_INT, 0);
+		GLenum error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error post proc gen render: " << error << endl;
 		}
 
 

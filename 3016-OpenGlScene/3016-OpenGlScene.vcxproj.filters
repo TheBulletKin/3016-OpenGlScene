@@ -67,5 +67,11 @@
     <None Include="Shaders\VertexShader.v">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\TerrainFragmentShader.f">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\TerrainVertexShader.v">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
