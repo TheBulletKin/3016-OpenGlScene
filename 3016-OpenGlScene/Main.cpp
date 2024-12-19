@@ -8,9 +8,9 @@
 
 #include <iostream>
 #include <map>
-#include <vector>
 #include <math.h>
 #include <random>
+#include <vector>
 
 #include "Camera.h"
 #include "CustomSceneObject.h"
@@ -18,8 +18,8 @@
 #include "Shader.h"
 
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 #include "FastNoiseLite.h"
 
@@ -51,6 +51,7 @@ const unsigned int SCR_HEIGHT = 600;
 //--- Proc gen globals
 const unsigned int RENDER_DISTANCE = 128;
 const unsigned int MAP_SIZE = RENDER_DISTANCE * RENDER_DISTANCE;
+const double PI = acos(-1);
 
 //Chunks across one dimension
 const int squaresRow = RENDER_DISTANCE - 1;
@@ -330,18 +331,22 @@ int main()
 	float projectileSpawnTimer = 0.0f;
 
 	//--- Procedural terrain generation
-	
+
 	// TODO TODAY
 	//Work through the lab sessions, get it working first
 	//Consolidate what has been done, Multiple shaders, when to use multiple shaders, what they actually do.
 	//Look at the lab sessions to see how it organises its buffers and stuff
 	//Consider how to clean up everything by moving stuff into different methods.
 
+	//Basic terrain generation done
+	//Look into creating a sphere.
+	//Do research and experiment, work on creating that sphere vertices mesh first
+
 	//--- Create shader for terrain
 	//Needed because terrain does not use textures like base objects
 
 	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
-	
+
 	//Generation of height map vertices
 	GLfloat terrainVertices[MAP_SIZE][6];
 
@@ -463,7 +468,7 @@ int main()
 		}
 	}
 
-	
+
 
 	//--- Buffer generation for proc gen
 	unsigned int ProcGenVAO, ProcGenVBO, ProcGenEBO;
@@ -475,7 +480,7 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
 
 	glGenBuffers(1, &ProcGenEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProcGenEBO);	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProcGenEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(terrainIndices), terrainIndices, GL_STATIC_DRAW);
 
 	//Position
@@ -490,6 +495,118 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+
+	//--- Spherical object generation
+
+	/* Sphere vertices principles
+	* https://www.songho.ca/opengl/gl_sphere.html
+	* A sphere has an infinite number of vertices, so we sample at certain points instead.
+	* These samples are 'rings', various points on the sphere that creates sectors and stacks at intervals.
+	* Sectors are the flat loops that run from top to bottom, like slicing the sphere horizontally with a knife.
+	* Stacks are the verticle slices.
+	* Sectors mark the longitude of a sphere, stacks are the latitude.
+	* Longitude is therefore measured from 0 - 180, latitude from 0 -360.
+	* A point on the surface of a sphere can be deduced by two angles:
+	* Theta (vertical stack)(0 with a horizontal cross) for the longitude angle.
+	* Ranges from 0 to 2PI, 0 to 360 degrees.
+	* Phi (horizontal sector)(0 with a vertical line) for latitude, ironically the line is the inverse of the slice that measurement represents
+	* Ranges from 0 to PI
+	* Any point can be calulcated with the equation:
+	* x = (radius *cos(phi)) *cos(theta)
+	* y = (radius *cos(phi)) *sin(theta)
+	* z = radius *sin(phi)
+
+
+	*/
+
+
+
+	float radius = 2.0f;
+	const int longitudeSteps = 36;
+	const int latitudeSteps = 18;
+
+	//Access with latitude then longitude, starts top left, moves around then down and around again
+	//Each vertex of the sphere is defined by lat and lon, each holding 3 values for position, 3 for colour
+	GLfloat sphereVertices[latitudeSteps][longitudeSteps][6];
+
+	for (int lat = 0; lat < latitudeSteps; lat++)
+	{
+		for (int lon = 0; lon < longitudeSteps; lon++)
+		{
+			float theta = 2.0f * PI * lon / longitudeSteps;
+			float phi = PI * lat / (latitudeSteps - 1);
+
+			//Performs the formulas described above
+			float x = radius * sin(phi) * cos(theta);
+			float y = radius * cos(phi);
+			float z = radius * sin(phi) * sin(theta);
+
+			if (fabs(x) < 1e-6) x = 0.0f;
+			if (fabs(y) < 1e-6) y = 0.0f;
+			if (fabs(z) < 1e-6) z = 0.0f;
+
+			sphereVertices[lat][lon][0] = x;
+			sphereVertices[lat][lon][1] = y;
+			sphereVertices[lat][lon][2] = z;
+
+			sphereVertices[lat][lon][3] = 0.0f;
+			sphereVertices[lat][lon][4] = 0.75f;
+			sphereVertices[lat][lon][5] = 0.25f;
+
+
+		}
+	}
+
+	GLuint sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
+
+
+
+	i = 0;
+	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
+		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
+
+			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
+			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
+			//In this case, lat + 1 moves it down 1
+
+			sphereIndices[i] = lat * longitudeSteps + lon; // Top left
+			sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
+			sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
+
+
+			sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
+			sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
+			sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
+
+			// Move to next set of 6 indices for the next two triangles
+			i += 6;
+		}
+	}
+
+	//--- Buffer generation for proc gen
+	unsigned int SphereVAO, SphereVBO, SphereEBO;
+	glGenVertexArrays(1, &SphereVAO);
+	glBindVertexArray(SphereVAO);
+
+	glGenBuffers(1, &SphereVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, SphereVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(sphereVertices), sphereVertices, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &SphereEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, SphereEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphereIndices), sphereIndices, GL_STATIC_DRAW);
+
+	//Position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	//Colours
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
 	//--- Constant render loop
@@ -554,7 +671,7 @@ int main()
 
 		//-- Random stuff for projectile generation
 		random_device rd;
-		mt19937 gen(rd());  
+		mt19937 gen(rd());
 		uniform_real_distribution<> dis(0.0, 1.0);
 
 		//-- Projectile spawning
@@ -562,20 +679,20 @@ int main()
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
 			PhysicsObject* newProjectileObject = new PhysicsObject();
-			newProjectileObject->VAO = ProjectileCubeVAO;			
+			newProjectileObject->VAO = ProjectileCubeVAO;
 			newProjectileObject->PrepareAndBindVBO(ProjectileCubeVBO, sizeof(cubeVertices) / (5 * sizeof(float)));
-			
-		
+
+
 			GLenum error;
 			while ((error = glGetError()) != GL_NO_ERROR) {
 				cerr << "OpenGL error after VBO binding: " << error << endl;
 			}
 
-			double pi = acos(-1);
+
 
 			//Rand does not return a normalised value, it could return anything from 0 to potentially 32767. Divide by the maximum value to get a normalised value
 			//2 * pi represents a full circle in radians, so dividing that by the random value gives a sector
-			double angle = dis(gen) * 2.0 * pi;
+			double angle = dis(gen) * 2.0 * PI;
 
 			// Generate a random radius using sqrt method for uniform distribution
 			double r = spawnRadius * sqrt(dis(gen));
@@ -589,17 +706,17 @@ int main()
 
 			//Value between 0 and 1 as before, multiply by what is 45 degrees in radians, means the resulting angle will be less than 45. Could set it to 2*pi for a full circle for instance
 			//Vertical angle value
-			float theta = dis(gen) * (pi / 4);
+			float theta = dis(gen) * (PI / 4);
 
 			//Horizontal angle value
-			float azimuth = dis(gen) * (2 * pi);
+			float azimuth = dis(gen) * (2 * PI);
 
 			float vx = sin(theta) * cos(azimuth);
 			float vy = cos(theta);
 			float vz = sin(theta) * sin(azimuth);
 
 			vec3 spawnVelocity = normalize(vec3(vx, vy, vz));
-			spawnVelocity = spawnVelocity * 10.0f;			
+			spawnVelocity = spawnVelocity * 10.0f;
 
 			//cout << "Random Point: (" << x << ", " << y << ", " << z << ")\n";
 			//cout << "Random Velocity: (" << vx << ", " << abs(vy) << ", " << vz << ")\n";
@@ -618,7 +735,7 @@ int main()
 			{
 				projectileObject->UpdatePosition(deltaTime);
 
-				if (projectileObject->ShouldDestroy()) {					
+				if (projectileObject->ShouldDestroy()) {
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
 
@@ -634,8 +751,8 @@ int main()
 					}
 
 					projectileObject->DrawMesh();
-					
-					
+
+
 					error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
 						cerr << "OpenGL error post render: " << error << endl;
@@ -645,12 +762,13 @@ int main()
 				}
 			}
 
-			
+
 		}
 
 		//Configure procedural generation shader attributes
 		ProceduralObjectShader.Use();
 
+		//Terrain
 		mat4 terrainModel = mat4(1.0f);
 		terrainModel = scale(terrainModel, vec3(2.0f, 2.0f, 2.0f));
 		//Looking straight forward
@@ -658,13 +776,27 @@ int main()
 		//Elevation to look upon terrain
 		terrainModel = translate(terrainModel, vec3(0.0f, -2.f, -1.5f));
 		ProceduralObjectShader.setMat4("model", terrainModel);
-
 		ProceduralObjectShader.setMat4("projection", projection);
 		ProceduralObjectShader.setMat4("view", view);
+
 
 		glBindVertexArray(ProcGenVAO);
 		glDrawElements(GL_TRIANGLES, MAP_SIZE * 32, GL_UNSIGNED_INT, 0);
 		GLenum error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error post proc gen render: " << error << endl;
+		}
+
+		//Sphere
+		mat4 sphereModel = mat4(1.0f);		 
+		sphereModel = translate(sphereModel, vec3(8.0f, 0.0f, -12.0f));
+		ProceduralObjectShader.setMat4("model", sphereModel);		
+
+
+
+		glBindVertexArray(SphereVAO);
+		glDrawElements(GL_TRIANGLES, sizeof(sphereIndices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post proc gen render: " << error << endl;
 		}
