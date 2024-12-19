@@ -21,6 +21,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "FastNoiseLite.h"
 
 
 
@@ -331,11 +332,10 @@ int main()
 	//--- Procedural terrain generation
 	
 	// TODO TODAY
-	// Create a new vertex shader and figure out how itll work with the shader class and multiple programs
-	// Research when different shaders should be used
-	// Eventually look at how buffers and stuff are handled in the lab scripts as they may make mine easier to manage. Just study how it differs to mine.
-	// Consider moving stuff into multiple methods as its getting really crazy
-	// Look back over code to remind myself how it works
+	//Work through the lab sessions, get it working first
+	//Consolidate what has been done, Multiple shaders, when to use multiple shaders, what they actually do.
+	//Look at the lab sessions to see how it organises its buffers and stuff
+	//Consider how to clean up everything by moving stuff into different methods.
 
 	//--- Create shader for terrain
 	//Needed because terrain does not use textures like base objects
@@ -356,13 +356,13 @@ int main()
 	{
 		//Generation of x & z vertices for horizontal plane
 		terrainVertices[i][0] = columnVerticesOffset;
-		terrainVertices[i][1] = 0.0f;
+		//terrainVertices[i][1] = 0.0f;
 		terrainVertices[i][2] = rowVerticesOffset;
 
 		//Colour
-		terrainVertices[i][3] = 0.0f;
-		terrainVertices[i][4] = 0.75f;
-		terrainVertices[i][5] = 0.25f;
+		//terrainVertices[i][3] = 0.0f;
+		//terrainVertices[i][4] = 0.75f;
+		//terrainVertices[i][5] = 0.25f;
 
 		//Shifts x position across for next triangle along grid
 		columnVerticesOffset = columnVerticesOffset + -0.0625f;
@@ -418,6 +418,53 @@ int main()
 		}
 	}
 
+	//--- Fast noise lite
+	FastNoiseLite terrainNoise;
+
+	terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	terrainNoise.SetFrequency(0.05f);
+	int terrainSeed = rand() % 100;
+	terrainNoise.SetSeed(terrainSeed);
+
+	//Biome generation
+	FastNoiseLite biomeNoise;
+	biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
+	biomeNoise.SetFrequency(0.05f);
+	int biomeSeed = rand() % 100;
+	biomeNoise.SetSeed(biomeSeed);
+
+	//--- Height variation
+	//Terrain vertice index
+	int i = 0;
+	//Using x & y nested for loop in order to apply noise 2-dimensionally
+	for (int y = 0; y < RENDER_DISTANCE; y++)
+	{
+		for (int x = 0; x < RENDER_DISTANCE; x++)
+		{
+			//Setting of height from 2D noise value at respective x & y coordinate
+			terrainVertices[i][1] = terrainNoise.GetNoise((float)x, (float)y);
+
+			float biomeValue = biomeNoise.GetNoise((float)x, (float)y);
+
+			if (biomeValue <= -0.75f) //Plains
+			{
+				terrainVertices[i][3] = 0.0f;
+				terrainVertices[i][4] = 0.75f;
+				terrainVertices[i][5] = 0.25f;
+			}
+			else //Desert
+			{
+				terrainVertices[i][3] = 1.0f;
+				terrainVertices[i][4] = 1.0f;
+				terrainVertices[i][5] = 0.5f;
+			}
+
+			i++;
+		}
+	}
+
+	
+
 	//--- Buffer generation for proc gen
 	unsigned int ProcGenVAO, ProcGenVBO, ProcGenEBO;
 	glGenVertexArrays(1, &ProcGenVAO);
@@ -442,6 +489,8 @@ int main()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+
 
 	//--- Constant render loop
 	while (!glfwWindowShouldClose(window))

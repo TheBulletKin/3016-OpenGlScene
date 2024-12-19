@@ -142,6 +142,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CustomSceneObject.h" />
+    <ClInclude Include="FastNoiseLite.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="PhysicsObject.h" />
     <ClInclude Include="Shader.h" />
