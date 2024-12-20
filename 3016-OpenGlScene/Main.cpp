@@ -14,7 +14,7 @@
 
 #include "Camera.h"
 #include "CustomSceneObject.h"
-#include "PhysicsObject.h"
+#include "ArcingProjectileObject.h"
 #include "Shader.h"
 
 #include <assimp/Importer.hpp>
@@ -195,7 +195,7 @@ int main()
 	//--- Scene object containers
 	map<string, CustomSceneObject*> sceneObjectDictionary;
 
-	vector<PhysicsObject*> projectileObjects;
+	vector<ArcingProjectileObject*> projectileObjects;
 
 
 	//--- Cube object
@@ -748,7 +748,7 @@ int main()
 		projectileSpawnTimer += deltaTime;
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
-			PhysicsObject* newProjectileObject = new PhysicsObject();
+			ArcingProjectileObject* newProjectileObject = new ArcingProjectileObject();
 			newProjectileObject->VAO = ProjectileCubeVAO;
 			newProjectileObject->PrepareAndBindVBO(ProjectileCubeVBO, sizeof(cubeVertices) / (5 * sizeof(float)));
 
@@ -800,7 +800,7 @@ int main()
 		}
 
 		for (size_t i = 0; i < projectileObjects.size();) {
-			PhysicsObject* projectileObject = projectileObjects[i];
+			ArcingProjectileObject* projectileObject = projectileObjects[i];
 			if (projectileObject != NULL)
 			{
 				projectileObject->UpdatePosition(deltaTime);
@@ -881,7 +881,7 @@ int main()
 		lightShader.Use();
 		lightShader.setMat4("model", lightModel);
 		lightShader.setMat4("projection", projection);
-		lightShader.setMat4("view", view);
+		lightShader.setMat4("view", view); 
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -904,7 +904,7 @@ int main()
 		}
 	}
 
-	for (PhysicsObject* projectile : projectileObjects)
+	for (ArcingProjectileObject* projectile : projectileObjects)
 	{
 		projectile->CleanUp();
 	}

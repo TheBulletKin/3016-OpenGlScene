@@ -1,7 +1,7 @@
-#include "PhysicsObject.h"
+#include "ArcingProjectileObject.h"
 #include <cmath>
 
-void PhysicsObject::Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime) {
+void ArcingProjectileObject::Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime) {
 	this->initialVelocity = initialVelocity;
 	this->initialPosition = initialPosition;
 	this->currentPosition = initialPosition;
@@ -12,7 +12,7 @@ void PhysicsObject::Launch(vec3 initialVelocity, vec3 initialPosition, float ini
 	
 }
 
-void PhysicsObject::UpdatePosition(float deltaTime) {
+void ArcingProjectileObject::UpdatePosition(float deltaTime) {
 	timeSinceStart += deltaTime;
 	currentPosition.x = initialPosition.x + initialVelocity.x * timeSinceStart;
 
@@ -23,7 +23,7 @@ void PhysicsObject::UpdatePosition(float deltaTime) {
 	
 }
 
-bool PhysicsObject::ShouldDestroy() {
+bool ArcingProjectileObject::ShouldDestroy() {
 	if (currentPosition.y < 0.0f)
 	{
 		return true;

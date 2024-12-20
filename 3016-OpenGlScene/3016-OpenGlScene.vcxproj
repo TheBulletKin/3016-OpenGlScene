@@ -135,7 +135,7 @@
     <ClCompile Include="CustomSceneObject.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="PhysicsObject.cpp" />
+    <ClCompile Include="ArcingProjectileObject.cpp" />
     <ClCompile Include="StbImageLoader.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
   </ItemGroup>
@@ -144,7 +144,7 @@
     <ClInclude Include="CustomSceneObject.h" />
     <ClInclude Include="FastNoiseLite.h" />
     <ClInclude Include="Main.h" />
-    <ClInclude Include="PhysicsObject.h" />
+    <ClInclude Include="ArcingProjectileObject.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureLoader.h" />

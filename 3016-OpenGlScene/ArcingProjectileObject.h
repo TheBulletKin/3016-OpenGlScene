@@ -6,11 +6,11 @@
 
 using namespace glm;
 
-class PhysicsObject : public CustomSceneObject   
+class ArcingProjectileObject : public CustomSceneObject   
 {
 public:
-	PhysicsObject() : CustomSceneObject() {};
-	~PhysicsObject() {};
+	ArcingProjectileObject() : CustomSceneObject() {};
+	~ArcingProjectileObject() {};
 	void Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime);
 	void UpdatePosition(float deltaTime);
 	bool ShouldDestroy();
