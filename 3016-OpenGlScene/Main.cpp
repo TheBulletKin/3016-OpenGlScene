@@ -44,6 +44,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 //--- Other methods
 void processInput(GLFWwindow* window);
 void CreateObject(string name, float vertices[], int verticesCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
+void LoadTexture(unsigned int& textureId, const char* filePath);
 
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
@@ -233,29 +234,13 @@ int main()
 	
 
 	// ----------------------------------------------
-	// Projectile cube creation
+	// Projectile cube prefab creation
 	// ----------------------------------------------
 
-	//--- Projectile Object Setup
-	unsigned int ProjectileCubeVAO, ProjectileCubeVBO;
-	glGenVertexArrays(1, &ProjectileCubeVAO);
-	glBindVertexArray(ProjectileCubeVAO);
+	CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
-	glGenBuffers(1, &ProjectileCubeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, ProjectileCubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+	
 	//--- Projectile spawning variables
 	vec3 spawnCentre = vec3(0.0f, 0.0f, 0.0f);
 	float spawnRadius = 3.0f;
@@ -263,53 +248,8 @@ int main()
 	//--- Texture Loading
 	//First texture
 	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
 
-	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-	/*With the texture bound we can change it's wrapping method
-		GL_CLAMP_TO_BORDER prevents the texture from overspilling
-		GL_CLAMP_TO_EDGE allows the edge pixels to continuously overspill
-		GL_REPEAT allows the texture to repeatedly render itself adjacently
-		GL_MIRRORED_REPEAT accomplishes GL_REPEAT while also flipping textures in the given direction of their given adjacent texture
-	*/
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// Texture filtering allows for approximation of values based on neigbouring pixels.
-	// Nearest looks blocky, a point between two texels is simply the texture coordinate it is in, leads to a pixelly effect
-	// Linear performs interpolation between texels, so pixels between two texels are smoothened out
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-
-	// load image, create texture and generate mipmaps
-	int imageWidth, imageHeight, nrChannels;
-	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-	unsigned char* data = stbi_load("Media/container.jpg", &imageWidth, &imageHeight, &nrChannels, 0);
-	if (data)
-	{
-		//Generation of texture from retrieved texture data
-		// TExture buffer used
-		// Mipmap level
-		// Image colour format
-		// X dimension of the texture
-		// y dimension of the texture
-		// set to 0, a legacy feature thing
-		// Source image colour format
-		// The form of data in which we stored the original image
-		// The image data itself
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
+	LoadTexture(texture1, "Media/container.jpg");	
 
 
 	//--- Set the sampler on each shader to the correct texture
@@ -762,8 +702,8 @@ int main()
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
 			ArcingProjectileObject* newProjectileObject = new ArcingProjectileObject();
-			newProjectileObject->VAO = ProjectileCubeVAO;
-			newProjectileObject->PrepareAndBindVBO(ProjectileCubeVBO, sizeof(cubeVertices) / (5 * sizeof(float)));
+			newProjectileObject->VAO = sceneObjectDictionary["Projectile Base"]->VAO;
+			newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Projectile Base"]->VBO, sizeof(cubeVertices) / (5 * sizeof(float)));
 
 
 			GLenum error;
@@ -1015,6 +955,56 @@ void CreateObject(string name, float vertices[], int verticesElementCount, unsig
 	newObject->PrepareVertexAttributeArrays(sectionSizes, vertexAttributeCount);
 
 	sceneObjectDictionary[name] = newObject;
+}
+
+void LoadTexture(unsigned int& textureId, const char* filePath) {
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+
+	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	/*With the texture bound we can change it's wrapping method
+		GL_CLAMP_TO_BORDER prevents the texture from overspilling
+		GL_CLAMP_TO_EDGE allows the edge pixels to continuously overspill
+		GL_REPEAT allows the texture to repeatedly render itself adjacently
+		GL_MIRRORED_REPEAT accomplishes GL_REPEAT while also flipping textures in the given direction of their given adjacent texture
+	*/
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+	// Texture filtering allows for approximation of values based on neigbouring pixels.
+	// Nearest looks blocky, a point between two texels is simply the texture coordinate it is in, leads to a pixelly effect
+	// Linear performs interpolation between texels, so pixels between two texels are smoothened out
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+	// load image, create texture and generate mipmaps
+	int imageWidth, imageHeight, nrChannels;
+	stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+	unsigned char* data = stbi_load(filePath, &imageWidth, &imageHeight, &nrChannels, 0);
+	if (data)
+	{
+		//Generation of texture from retrieved texture data
+		// TExture buffer used
+		// Mipmap level
+		// Image colour format
+		// X dimension of the texture
+		// y dimension of the texture
+		// set to 0, a legacy feature thing
+		// Source image colour format
+		// The form of data in which we stored the original image
+		// The image data itself
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
 }
 
 
