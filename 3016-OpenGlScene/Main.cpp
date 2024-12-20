@@ -603,6 +603,8 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Shader sphereShader("Shaders/LitVertexShader.v", "Shaders/LitFragmentShader.f");
+
+	sphereShader.Use();
 	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	sphereShader.setVec3("lightColor", vec3(1.0f, 1.0f, 1.0f));
 
