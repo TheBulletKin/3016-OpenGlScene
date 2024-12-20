@@ -46,6 +46,7 @@ void processInput(GLFWwindow* window);
 void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
 void LoadTexture(unsigned int& textureId, const char* filePath);
 void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
+void CreateSphereObject();
 
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
@@ -298,7 +299,9 @@ int main()
 	
 
 
-	//--- Spherical object generation
+	// ----------------------------------------
+	// Sphere object creation
+	// ----------------------------------------
 
 	/* Sphere vertices principles
 	* https://www.songho.ca/opengl/gl_sphere.html
@@ -322,97 +325,7 @@ int main()
 
 	*/
 
-
-
-	float radius = 2.0f;
-	const int longitudeSteps = 36;
-	const int latitudeSteps = 18;
-
-	//Access with latitude then longitude, starts top left, moves around then down and around again
-	//Each vertex of the sphere is defined by lat and lon, each holding 3 values for position, 3 for colour
-	GLfloat sphereVertices[latitudeSteps][longitudeSteps][6];
-
-	for (int lat = 0; lat < latitudeSteps; lat++)
-	{
-		for (int lon = 0; lon < longitudeSteps; lon++)
-		{
-			float theta = 2.0f * PI * lon / longitudeSteps;
-			float phi = PI * lat / (latitudeSteps - 1);
-
-			//Performs the formulas described above
-			float x = radius * sin(phi) * cos(theta);
-			float y = radius * cos(phi);
-			float z = radius * sin(phi) * sin(theta);
-
-			if (fabs(x) < 1e-6) x = 0.0f;
-			if (fabs(y) < 1e-6) y = 0.0f;
-			if (fabs(z) < 1e-6) z = 0.0f;
-
-			sphereVertices[lat][lon][0] = x;
-			sphereVertices[lat][lon][1] = y;
-			sphereVertices[lat][lon][2] = z;
-
-			sphereVertices[lat][lon][3] = 0.0f;
-			sphereVertices[lat][lon][4] = 0.75f;
-			sphereVertices[lat][lon][5] = 0.25f;
-
-
-		}
-	}
-
-	//Indices array is one dimensional, but assumes size 3 for each element
-	GLuint sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
-
-
-
-	int i = 0;
-	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
-		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
-
-			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
-			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
-			//In this case, lat + 1 moves it down 1
-			
-				sphereIndices[i] = lat * longitudeSteps + lon; // Top left
-				sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
-				sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
-
-
-				sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
-				sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
-				sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
-
-			
-
-
-			i += 6;
-		}
-	}
-
-	//--- Buffer generation for proc gen
-	unsigned int SphereVAO, SphereVBO, SphereEBO;
-	glGenVertexArrays(1, &SphereVAO);
-	glBindVertexArray(SphereVAO);
-
-	glGenBuffers(1, &SphereVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, SphereVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(sphereVertices), sphereVertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &SphereEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, SphereEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphereIndices), sphereIndices, GL_STATIC_DRAW);
-
-	//Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//Colours
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	CreateSphereObject();	
 
 	Shader sphereShader("Shaders/LitVertexShader.v", "Shaders/LitFragmentShader.f");
 
@@ -420,7 +333,65 @@ int main()
 	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	sphereShader.setVec3("lightColor", vec3(1.0f, 1.0f, 1.0f));
 
-	//--- Lighting
+
+	// ----------------------------------------
+	// Light object creation
+	// ----------------------------------------
+
+	float lightCubeVertices[] = {
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f
+	};
+
+	int lightCubeAttributesSize = 3;
+	vector<int> lightCubeSectionSizes =
+	{
+		3, //Position
+	};
+
+	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
+	CreateObject("Light Object", lightCubeVertices, lightCubeVerticesCount, NULL, 0, lightCubeSectionSizes, lightCubeAttributesSize);
+
+	
 	vec3 lightColour(1.0f, 1.0f, 1.0f);
 
 	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
@@ -428,70 +399,15 @@ int main()
 	lightShader.Use();
 	lightShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));	
 
-	float lightCubeVertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f, 
-		-0.5f,  0.5f, -0.5f,  
-		-0.5f, -0.5f, -0.5f, 
-
-		-0.5f, -0.5f,  0.5f, 
-		 0.5f, -0.5f,  0.5f, 
-		 0.5f,  0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f,  0.5f,  
-		-0.5f, -0.5f,  0.5f, 
-
-		-0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f, -0.5f, 
-		-0.5f, -0.5f, -0.5f,  
-		-0.5f, -0.5f, -0.5f,  
-		-0.5f, -0.5f,  0.5f, 
-		-0.5f,  0.5f,  0.5f,  
-
-		 0.5f,  0.5f,  0.5f, 
-		 0.5f,  0.5f, -0.5f, 
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f,  0.5f, 
-		 0.5f,  0.5f,  0.5f, 
-
-		-0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f,  0.5f,  
-		 0.5f, -0.5f,  0.5f, 
-		-0.5f, -0.5f,  0.5f,  
-		-0.5f, -0.5f, -0.5f,  
-
-		-0.5f,  0.5f, -0.5f,  
-		 0.5f,  0.5f, -0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f,  0.5f, 
-		-0.5f,  0.5f, -0.5f
-	};
-
-	GLuint lightVAO;
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
-
-	GLuint lightVBO;
-	glGenBuffers(1, &lightVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, lightVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(lightCubeVertices), lightCubeVertices, GL_STATIC_DRAW);
-
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
 	vec3 lightPos(3.0f, 3.0f, 2.0f);
 	mat4 lightModel = mat4(1.0f);
 	lightModel = translate(lightModel, lightPos);
 	lightModel = scale(lightModel, vec3(1.0f));
 
 
-	//--- Constant render loop
+	// -----------------------------------
+	// Main render loop
+	// -----------------------------------
 	while (!glfwWindowShouldClose(window))
 	{
 
@@ -661,9 +577,10 @@ int main()
 		ProceduralObjectShader.setMat4("projection", projection);
 		ProceduralObjectShader.setMat4("view", view);
 
+		sceneObjectDictionary["Procedural Terrain"]->DrawMesh();
 
-		glBindVertexArray(sceneObjectDictionary["Procedural Terrain"]->VAO);
-		glDrawElements(GL_TRIANGLES, MAP_SIZE * 32, GL_UNSIGNED_INT, 0);
+
+		
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post proc gen render: " << error << endl;
@@ -681,9 +598,8 @@ int main()
 		sphereShader.setMat4("view", view);
 
 
+		sceneObjectDictionary["Sphere Object"]->DrawMesh();
 
-		glBindVertexArray(SphereVAO);
-		glDrawElements(GL_TRIANGLES, sizeof(sphereIndices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post proc gen render: " << error << endl;
@@ -695,8 +611,8 @@ int main()
 		lightShader.setMat4("projection", projection);
 		lightShader.setMat4("view", view); 
 
-		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		sceneObjectDictionary["Light Object"]->DrawMesh();
+		
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post light render: " << error << endl;
@@ -998,6 +914,87 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 	CreateObject("Procedural Terrain", terrainVertices, terrainVerticesCount, &terrainIndices[0][0], indicesCount, terrainSectionSizes, terrainAttributeSize);
 
 	
+}
+
+void CreateSphereObject() {
+	float radius = 2.0f;
+	const int longitudeSteps = 36;
+	const int latitudeSteps = 18;
+
+	//Access with latitude then longitude, starts top left, moves around then down and around again
+	//Each vertex of the sphere is defined by lat and lon, each holding 3 values for position, 3 for colour
+	float sphereVertices[latitudeSteps][longitudeSteps][6];
+
+	for (int lat = 0; lat < latitudeSteps; lat++)
+	{
+		for (int lon = 0; lon < longitudeSteps; lon++)
+		{
+			float theta = 2.0f * PI * lon / longitudeSteps;
+			float phi = PI * lat / (latitudeSteps - 1);
+
+			//Performs the formulas described above
+			float x = radius * sin(phi) * cos(theta);
+			float y = radius * cos(phi);
+			float z = radius * sin(phi) * sin(theta);
+
+			if (fabs(x) < 1e-6) x = 0.0f;
+			if (fabs(y) < 1e-6) y = 0.0f;
+			if (fabs(z) < 1e-6) z = 0.0f;
+
+			sphereVertices[lat][lon][0] = x;
+			sphereVertices[lat][lon][1] = y;
+			sphereVertices[lat][lon][2] = z;
+
+			sphereVertices[lat][lon][3] = 0.0f;
+			sphereVertices[lat][lon][4] = 0.75f;
+			sphereVertices[lat][lon][5] = 0.25f;
+
+
+		}
+	}
+
+	//Indices array is one dimensional, but assumes size 3 for each element
+	unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
+
+
+
+	int i = 0;
+	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
+		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
+
+			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
+			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
+			//In this case, lat + 1 moves it down 1
+
+			sphereIndices[i] = lat * longitudeSteps + lon; // Top left
+			sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
+			sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
+
+
+			sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
+			sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
+			sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
+
+
+
+
+			i += 6;
+		}
+	}
+
+
+	int sphereAttributeSize = 6;
+	vector<int> sphereSectionSizes =
+	{
+		3, //Position
+		3  //Colour
+	};
+
+	int sphereVerticesCount = sizeof(sphereVertices) / sizeof(sphereVertices[0][0]);
+	int indicesCount = sizeof(sphereIndices) / sizeof(sphereIndices[0]);
+	size_t indicesDataSize = indicesCount * sizeof(unsigned int);
+	CreateObject("Sphere Object", sphereVertices[0][0], sphereVerticesCount, &sphereIndices[0], indicesCount, sphereSectionSizes, sphereAttributeSize);
+
 }
 
 
