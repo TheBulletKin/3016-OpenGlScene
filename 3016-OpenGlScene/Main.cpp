@@ -212,8 +212,7 @@ int main()
 	unsigned int planeIndices[] = {
 		0, 1, 3, //First triangle
 		1, 2, 3  //Second triangle
-	};	
-	
+	};		
 
 	int planeAttributeSize = 5;
 	vector<int> planeAttributeSizes =
@@ -391,7 +390,6 @@ int main()
 	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
 	CreateObject("Light Object", lightCubeVertices, lightCubeVerticesCount, NULL, 0, lightCubeSectionSizes, lightCubeAttributesSize);
 
-	
 	vec3 lightColour(1.0f, 1.0f, 1.0f);
 
 	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
@@ -411,29 +409,35 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 
-		//--- Deltatime logic
+		// -------------------------------------
+		// Deltatime logic
 		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		//--- Poll user input
+		// -------------------------------------
+		// Poll user input
 		processInput(window);
 
-		//--- Clear screen and set it to the random colour
+		//--------------------------------------
+		// Clear screen and set it to the random colour
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//--- Texture assigning
+		//-------------------------------------
+		// Texture assigning
 		// Set one of the texture units to the texture created, to use all textures in one draw call
 		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1); //Like last time, future operations will affect this texture
 
 
-		//--- Activate shader
+		//---------------------------------------
+		// Activate shader
 		TexturedObjectShader.Use();
 
-		//--- Pass updated projection matrix to vertex shaders
+		//--------------------------------------
+		// Pass updated projection matrix to vertex shaders
 		mat4 projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		TexturedObjectShader.setMat4("projection", projection);
 
