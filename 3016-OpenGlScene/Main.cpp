@@ -43,8 +43,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 //--- Other methods
 void processInput(GLFWwindow* window);
-void CreateObject(string name, float vertices[], int verticesCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
+void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
 void LoadTexture(unsigned int& textureId, const char* filePath);
+void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
 
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
@@ -121,16 +122,10 @@ int main()
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
 
-	//--- Create shader for base objects
-	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
-
-	//--- Vertex Data for cube
-	// remember that the coordinate is screen space, -1 - 1
 
 	// ---------------------------------------------------
 	// Base cube creation
 	// ---------------------------------------------------
-
 	float cubeVertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -205,7 +200,6 @@ int main()
 	// ----------------------------------------------
 	// Ground plane creation
 	// ----------------------------------------------
-
 	float planeVertices[] = {
 		//Positions             //Textures
 		0.5f, 0.5f, 0.0f,       1.0f, 1.0f, //top right
@@ -236,26 +230,35 @@ int main()
 	// ----------------------------------------------
 	// Projectile cube prefab creation
 	// ----------------------------------------------
-
 	CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
-	
 	//--- Projectile spawning variables
 	vec3 spawnCentre = vec3(0.0f, 0.0f, 0.0f);
 	float spawnRadius = 3.0f;
+	float projectileSpawnCooldown = 0.2f;
+	float projectileSpawnTimer = 0.0f;
 
-	//--- Texture Loading
-	//First texture
+
+	// --------------------------------------------
+	// Shader creation
+	// --------------------------------------------
+	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");	
+	TexturedObjectShader.Use();
+	//The texture sampler on the fragment shader is given value '0' now, means later on in the render loop it will use texture unit zero
+	TexturedObjectShader.setInt("texture1", 0);
+	
+	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
+
+	// --------------------------------------------
+	// Texture loading
+	// --------------------------------------------
 	unsigned int texture1;
 
 	LoadTexture(texture1, "Media/container.jpg");	
 
 
-	//--- Set the sampler on each shader to the correct texture
-	TexturedObjectShader.Use();
-	//The texture sampler on the fragment shader is given value '0', meaning when we put that texture on texture unit 0, it will automatically use it
-	TexturedObjectShader.setInt("texture1", 0);
+	
 
 
 	//--- Coordinate space and 3D
@@ -280,163 +283,19 @@ int main()
 	*
 	*/
 
-	float projectileSpawnCooldown = 0.2f;
-	float projectileSpawnTimer = 0.0f;
+	
 
-	//--- Procedural terrain generation
+	// -----------------------------------------
+	// Procedural terrain generation
+	// -----------------------------------------
+	//NOTE: Need to look through this later to double check understanding
 
-	//--- Create shader for terrain
-	//Needed because terrain does not use textures like base objects
+	float terrainVertices[MAP_SIZE][6];
+	int terrainVerticesCount = sizeof(terrainVertices) / sizeof(terrainVertices[0]);
 
-	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
+	CreateProceduralTerrain(&terrainVertices[0][0], terrainVerticesCount);
 
-	//Generation of height map vertices
-	GLfloat terrainVertices[MAP_SIZE][6];
-
-	//Positions to start drawing from
-	float drawingStartPosition = 1.0f;
-	float columnVerticesOffset = drawingStartPosition;
-	float rowVerticesOffset = drawingStartPosition;
-
-	int rowIndex = 0;
-
-	for (int i = 0; i < MAP_SIZE; i++)
-	{
-		//Generation of x & z vertices for horizontal plane
-		terrainVertices[i][0] = columnVerticesOffset;
-		//terrainVertices[i][1] = 0.0f;
-		terrainVertices[i][2] = rowVerticesOffset;
-
-		//Colour
-		//terrainVertices[i][3] = 0.0f;
-		//terrainVertices[i][4] = 0.75f;
-		//terrainVertices[i][5] = 0.25f;
-
-		//Shifts x position across for next triangle along grid
-		columnVerticesOffset = columnVerticesOffset + -0.0625f;
-
-		//Indexing of each chunk within row
-		rowIndex++;
-		//True when all triangles of the current row have been generated
-		if (rowIndex == RENDER_DISTANCE)
-		{
-			//Resets for next row of triangles
-			rowIndex = 0;
-			//Resets x position for next row of triangles
-			columnVerticesOffset = drawingStartPosition;
-			//Shifts y position
-			rowVerticesOffset = rowVerticesOffset + -0.0625f;
-		}
-	}
-
-	//Generation of height map indices
-	GLuint terrainIndices[trianglesGrid][3];
-
-	//Positions to start mapping indices from
-	int columnIndicesOffset = 0;
-	int rowIndicesOffset = 0;
-
-	//Generation of map indices in the form of chunks (1x1 right angle triangle squares)
-	rowIndex = 0;
-	for (int i = 0; i < trianglesGrid - 1; i += 2)
-	{
-		terrainIndices[i][0] = columnIndicesOffset + rowIndicesOffset; //top left
-		terrainIndices[i][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
-		terrainIndices[i][1] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
-
-		terrainIndices[i + 1][0] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
-		terrainIndices[i + 1][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
-		terrainIndices[i + 1][1] = 1 + RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom right
-
-		//Shifts x position across for next chunk along grid
-		columnIndicesOffset = columnIndicesOffset + 1;
-
-		//Indexing of each chunk within row
-		rowIndex++;
-
-		//True when all chunks of the current row have been generated
-		if (rowIndex == squaresRow)
-		{
-			//Resets for next row of chunks
-			rowIndex = 0;
-			//Resets x position for next row of chunks
-			columnIndicesOffset = 0;
-			//Shifts y position
-			rowIndicesOffset = rowIndicesOffset + RENDER_DISTANCE;
-		}
-	}
-
-	//--- Fast noise lite
-	FastNoiseLite terrainNoise;
-
-	terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-	terrainNoise.SetFrequency(0.05f);
-	int terrainSeed = rand() % 100;
-	terrainNoise.SetSeed(terrainSeed);
-
-	//Biome generation
-	FastNoiseLite biomeNoise;
-	biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
-	biomeNoise.SetFrequency(0.05f);
-	int biomeSeed = rand() % 100;
-	biomeNoise.SetSeed(biomeSeed);
-
-	//--- Height variation
-	//Terrain vertice index
-	int i = 0;
-	//Using x & y nested for loop in order to apply noise 2-dimensionally
-	for (int y = 0; y < RENDER_DISTANCE; y++)
-	{
-		for (int x = 0; x < RENDER_DISTANCE; x++)
-		{
-			//Setting of height from 2D noise value at respective x & y coordinate
-			terrainVertices[i][1] = terrainNoise.GetNoise((float)x, (float)y);
-
-			float biomeValue = biomeNoise.GetNoise((float)x, (float)y);
-
-			if (biomeValue <= -0.75f) //Plains
-			{
-				terrainVertices[i][3] = 0.0f;
-				terrainVertices[i][4] = 0.75f;
-				terrainVertices[i][5] = 0.25f;
-			}
-			else //Desert
-			{
-				terrainVertices[i][3] = 1.0f;
-				terrainVertices[i][4] = 1.0f;
-				terrainVertices[i][5] = 0.5f;
-			}
-
-			i++;
-		}
-	}
-
-
-
-	//--- Buffer generation for proc gen
-	unsigned int ProcGenVAO, ProcGenVBO, ProcGenEBO;
-	glGenVertexArrays(1, &ProcGenVAO);
-	glBindVertexArray(ProcGenVAO);
-
-	glGenBuffers(1, &ProcGenVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, ProcGenVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &ProcGenEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProcGenEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(terrainIndices), terrainIndices, GL_STATIC_DRAW);
-
-	//Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//Colours
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	
 
 
 	//--- Spherical object generation
@@ -506,7 +365,7 @@ int main()
 
 
 
-	i = 0;
+	int i = 0;
 	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
 		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
 
@@ -803,7 +662,7 @@ int main()
 		ProceduralObjectShader.setMat4("view", view);
 
 
-		glBindVertexArray(ProcGenVAO);
+		glBindVertexArray(sceneObjectDictionary["Procedural Terrain"]->VAO);
 		glDrawElements(GL_TRIANGLES, MAP_SIZE * 32, GL_UNSIGNED_INT, 0);
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1005,6 +864,140 @@ void LoadTexture(unsigned int& textureId, const char* filePath) {
 		std::cout << "Failed to load texture" << std::endl;
 	}
 	stbi_image_free(data);
+}
+
+
+void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
+	//Positions to start drawing from
+	float drawingStartPosition = 1.0f;
+	float columnVerticesOffset = drawingStartPosition;
+	float rowVerticesOffset = drawingStartPosition;
+
+	int rowIndex = 0;
+
+	for (int i = 0; i < MAP_SIZE; i++)
+	{
+		//Generation of x & z vertices for horizontal plane
+		terrainVertices[i * 6 + 0] = columnVerticesOffset;
+		//terrainVertices[i][1] = 0.0f;
+		terrainVertices[i * 6 + 2] = rowVerticesOffset;
+
+		//Colour
+		//terrainVertices[i][3] = 0.0f;
+		//terrainVertices[i][4] = 0.75f;
+		//terrainVertices[i][5] = 0.25f;
+
+		//Shifts x position across for next triangle along grid
+		columnVerticesOffset = columnVerticesOffset + -0.0625f;
+
+		//Indexing of each chunk within row
+		rowIndex++;
+		//True when all triangles of the current row have been generated
+		if (rowIndex == RENDER_DISTANCE)
+		{
+			//Resets for next row of triangles
+			rowIndex = 0;
+			//Resets x position for next row of triangles
+			columnVerticesOffset = drawingStartPosition;
+			//Shifts y position
+			rowVerticesOffset = rowVerticesOffset + -0.0625f;
+		}
+	}
+
+	//Generation of height map indices
+	unsigned int terrainIndices[trianglesGrid][3];
+
+	//Positions to start mapping indices from
+	int columnIndicesOffset = 0;
+	int rowIndicesOffset = 0;
+
+	//Generation of map indices in the form of chunks (1x1 right angle triangle squares)
+	rowIndex = 0;
+	for (int i = 0; i < trianglesGrid - 1; i += 2)
+	{
+		terrainIndices[i][0] = columnIndicesOffset + rowIndicesOffset; //top left
+		terrainIndices[i][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
+		terrainIndices[i][1] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
+
+		terrainIndices[i + 1][0] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
+		terrainIndices[i + 1][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
+		terrainIndices[i + 1][1] = 1 + RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom right
+
+		//Shifts x position across for next chunk along grid
+		columnIndicesOffset = columnIndicesOffset + 1;
+
+		//Indexing of each chunk within row
+		rowIndex++;
+
+		//True when all chunks of the current row have been generated
+		if (rowIndex == squaresRow)
+		{
+			//Resets for next row of chunks
+			rowIndex = 0;
+			//Resets x position for next row of chunks
+			columnIndicesOffset = 0;
+			//Shifts y position
+			rowIndicesOffset = rowIndicesOffset + RENDER_DISTANCE;
+		}
+	}
+
+	//--- Fast noise lite
+	FastNoiseLite terrainNoise;
+
+	terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	terrainNoise.SetFrequency(0.05f);
+	int terrainSeed = rand() % 100;
+	terrainNoise.SetSeed(terrainSeed);
+
+	//Biome generation
+	FastNoiseLite biomeNoise;
+	biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
+	biomeNoise.SetFrequency(0.05f);
+	int biomeSeed = rand() % 100;
+	biomeNoise.SetSeed(biomeSeed);
+
+	//--- Height variation
+	//Terrain vertice index
+	int i = 0;
+	//Using x & y nested for loop in order to apply noise 2-dimensionally
+	for (int y = 0; y < RENDER_DISTANCE; y++)
+	{
+		for (int x = 0; x < RENDER_DISTANCE; x++)
+		{
+			//Setting of height from 2D noise value at respective x & y coordinate
+			terrainVertices[i * 6 + 1] = terrainNoise.GetNoise((float)x, (float)y);
+
+			float biomeValue = biomeNoise.GetNoise((float)x, (float)y);
+
+			if (biomeValue <= -0.75f) //Plains
+			{
+				terrainVertices[i * 6 + 3] = 0.0f;
+				terrainVertices[i * 6 + 4] = 0.75f;
+				terrainVertices[i * 6 + 5] = 0.25f;
+			}
+			else //Desert
+			{
+				terrainVertices[i * 6 + 3] = 1.0f;
+				terrainVertices[i * 6 + 4] = 1.0f;
+				terrainVertices[i * 6 + 5] = 0.5f;
+			}
+
+			i++;
+		}
+	}
+
+	int terrainAttributeSize = 6;
+	vector<int> terrainSectionSizes =
+	{
+		3, //Position
+		3  //Colour
+	};
+
+	int indicesCount = sizeof(terrainIndices) / sizeof(terrainIndices[0][0]);
+	size_t indicesDataSize = indicesCount * sizeof(unsigned int);
+	CreateObject("Procedural Terrain", terrainVertices, terrainVerticesCount, &terrainIndices[0][0], indicesCount, terrainSectionSizes, terrainAttributeSize);
+
+	
 }
 
 
