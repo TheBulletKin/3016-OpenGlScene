@@ -43,6 +43,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 //--- Other methods
 void processInput(GLFWwindow* window);
+void CreateObject(string name, float vertices[], int verticesCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
 
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
@@ -67,6 +68,11 @@ bool firstMouse = true;
 //--- Time tracking
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
+
+//--- Scene object containers
+map<string, CustomSceneObject*> sceneObjectDictionary;
+
+vector<ArcingProjectileObject*> projectileObjects;
 
 
 
@@ -119,6 +125,11 @@ int main()
 
 	//--- Vertex Data for cube
 	// remember that the coordinate is screen space, -1 - 1
+
+	// ---------------------------------------------------
+	// Base cube creation
+	// ---------------------------------------------------
+
 	float cubeVertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -175,9 +186,25 @@ int main()
 		vec3(1.5f,  2.0f, -2.5f),
 		vec3(1.5f,  0.2f, -1.5f),
 		vec3(-1.3f,  1.0f, -1.5f)
+	};	
+
+	int cubeVertexSize = 5;
+	vector<int> cubeSectionSizes =
+	{
+		3, //Position
+		2  //Tex coords
 	};
 
-	//--- Plane vertices and indices
+	int cubeVerticesCount = sizeof(cubeVertices) / (sizeof(cubeVertices[0]) * cubeVertexSize);
+
+	CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
+
+
+
+	// ----------------------------------------------
+	// Ground plane creation
+	// ----------------------------------------------
+
 	float planeVertices[] = {
 		//Positions             //Textures
 		0.5f, 0.5f, 0.0f,       1.0f, 1.0f, //top right
@@ -189,39 +216,25 @@ int main()
 	unsigned int planeIndices[] = {
 		0, 1, 3, //First triangle
 		1, 2, 3  //Second triangle
+	};	
+	
+
+	int planeAttributeSize = 5;
+	vector<int> planeAttributeSizes =
+	{
+		3, //Position
+		2  //Tex coords
 	};
 
+	int planeVerticesCount = sizeof(planeVertices) / sizeof(planeVertices[0]) * planeAttributeSize;
+	int planeIndicesCount = sizeof(planeIndices) / sizeof(planeIndices[0]);
 
-	//--- Scene object containers
-	map<string, CustomSceneObject*> sceneObjectDictionary;
+	CreateObject("Plane Object", planeVertices, planeIndicesCount, planeIndices, planeIndicesCount, planeAttributeSizes, planeAttributeSize);
+	
 
-	vector<ArcingProjectileObject*> projectileObjects;
-
-
-	//--- Cube object
-	CustomSceneObject* newSceneObject = new CustomSceneObject();
-	newSceneObject->PrepareAndBindVAO();
-	newSceneObject->PrepareAndBindVBO(cubeVertices, sizeof(cubeVertices), sizeof(cubeVertices) / (5 * sizeof(float))); //Because of 5 elements per vertex
-	newSceneObject->PrepareVertexAttributeArrays();
-
-	sceneObjectDictionary["Cube Object"] = newSceneObject;
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-	//--- Ground plane object
-	newSceneObject = new CustomSceneObject();
-	newSceneObject->PrepareAndBindVAO();
-	newSceneObject->PrepareAndBindVBO(planeVertices, sizeof(planeVertices), sizeof(planeVertices) / (5 * sizeof(float)));
-	newSceneObject->PrepareAndBindEBO(planeIndices, sizeof(planeIndices), sizeof(planeIndices) / sizeof(planeIndices[0]));
-	newSceneObject->PrepareVertexAttributeArrays();
-
-	sceneObjectDictionary["Plane Object"] = newSceneObject;
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	// ----------------------------------------------
+	// Projectile cube creation
+	// ----------------------------------------------
 
 	//--- Projectile Object Setup
 	unsigned int ProjectileCubeVAO, ProjectileCubeVBO;
@@ -971,6 +984,37 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+
+
+
+/// <summary>
+/// 
+/// </summary>
+/// <param name="name">Name to be added to scene object dictionary</param>
+/// <param name="vertices">Vertices array, will be passed in as pointer</param>
+/// <param name="verticesCount">Total number of vertices</param>
+/// <param name="indices">Vertices array, will be passed in as pointer</param>
+/// <param name="indicesCount">Total number of indices in array</param>
+/// <param name="sectionSizes">Vector listing the sizes of each attribute section in sequence</param>
+/// <param name="vertexAttributeCount">Number of floats per vertex</param>
+void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount) {
+	CustomSceneObject* newObject = new CustomSceneObject();
+	newObject->PrepareAndBindVAO();
+
+	size_t verticesDataSize = verticesElementCount * vertexAttributeCount * sizeof(float);
+	newObject->PrepareAndBindVBO(vertices, verticesDataSize, verticesElementCount);
+
+	if (indicesCount > 0)
+	{
+		size_t indicesDataSize = indicesCount * sizeof(unsigned int);
+		newObject->PrepareAndBindEBO(indices, indicesDataSize, indicesCount);
+	}
+
+	newObject->PrepareVertexAttributeArrays(sectionSizes, vertexAttributeCount);
+
+	sceneObjectDictionary[name] = newObject;
 }
 
 

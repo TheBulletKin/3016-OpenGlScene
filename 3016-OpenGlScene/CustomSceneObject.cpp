@@ -11,7 +11,7 @@ CustomSceneObject::CustomSceneObject() {
 }
 
 CustomSceneObject::~CustomSceneObject() {
-	
+
 }
 
 //--- Vertex buffers and attributes
@@ -61,30 +61,39 @@ void CustomSceneObject::PrepareAndBindEBO(unsigned int indices[], size_t indices
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesDataSize, indices, GL_STATIC_DRAW);
 }
 
+
 /// <summary>
-/// Enables the vertex attribute pointers in the VAO, required per VAO.
-/// Position = 0
-/// TextureCoord = 1
+/// 
 /// </summary>
-void CustomSceneObject::PrepareVertexAttributeArrays() {
-	//--- Vertex attribute pointers
-	// Will tell OpenGL how to interpret the vertex buffer data.
-	// Relates to variables in the shader, like the first 3 relating to position, last two are texture coords.
+/// <param name="sectionSizes">A vector where each int is the size of one attribute of a vertex. Eg, {3, 2} could mean 3 floats for position and 2 floats for texcoords</param>
+/// <param name="vertexAttributeCount">total number of floats per vertex</param>
+void CustomSceneObject::PrepareVertexAttributeArrays(vector<int>& sectionSizes, int vertexAttributeCount)
+{
+	size_t stride = vertexAttributeCount * sizeof(float);
+	size_t offset = 0;
+	for (size_t i = 0; i < sectionSizes.size(); ++i) {
+		int sectionSize = sectionSizes[i];
 
-	// First parameter: Attribute location for the shader, should match 'location = 0' in the vertex shader
-	// Second parameter: Each vertex has 3 values, xyz coordinates in this case. Colour for instance can bring it to 4
-	// Third parameter: Type of each component is float (each coordinate)
-	// Fourth parameter: NO normalisation is applied
-	// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
-	// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
 
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+		// Will tell OpenGL how to interpret the vertex buffer data.
+		// Relates to variables in the shader, like the first 3 relating to position, last two are texture coords.
 
+		// First parameter: Attribute location for the shader, should match 'location = 0' in the vertex shader
+		// Second parameter: Each vertex has 3 values, xyz coordinates in this case. Colour for instance can bring it to 4
+		// Third parameter: Type of each component is float (each coordinate)
+		// Fourth parameter: NO normalisation is applied
+		// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
+		// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
+
+		glVertexAttribPointer(i, sectionSize, GL_FLOAT, GL_FALSE, stride, (void*)(offset));
+		glEnableVertexAttribArray(i);
+
+		offset += sectionSize * sizeof(float);
+	}
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 /// <summary>
@@ -97,12 +106,12 @@ void CustomSceneObject::DrawMesh() {
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 	}
 	else {
-		glBindVertexArray(VAO);	
+		glBindVertexArray(VAO);
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error: " << error << endl;
 		}
-		glDrawArrays(GL_TRIANGLES, 0, verticesCount);	
+		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error: " << error << endl;
