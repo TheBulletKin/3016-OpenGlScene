@@ -332,16 +332,6 @@ int main()
 
 	//--- Procedural terrain generation
 
-	// TODO TODAY
-	//Work through the lab sessions, get it working first
-	//Consolidate what has been done, Multiple shaders, when to use multiple shaders, what they actually do.
-	//Look at the lab sessions to see how it organises its buffers and stuff
-	//Consider how to clean up everything by moving stuff into different methods.
-
-	//Basic terrain generation done
-	//Look into creating a sphere.
-	//Do research and experiment, work on creating that sphere vertices mesh first
-
 	//--- Create shader for terrain
 	//Needed because terrain does not use textures like base objects
 
@@ -509,6 +499,7 @@ int main()
 	* A point on the surface of a sphere can be deduced by two angles:
 	* Theta (vertical stack)(0 with a horizontal cross) for the longitude angle.
 	* Ranges from 0 to 2PI, 0 to 360 degrees.
+*
 	* Phi (horizontal sector)(0 with a vertical line) for latitude, ironically the line is the inverse of the slice that measurement represents
 	* Ranges from 0 to PI
 	* Any point can be calulcated with the equation:
@@ -557,6 +548,7 @@ int main()
 		}
 	}
 
+	//Indices array is one dimensional, but assumes size 3 for each element
 	GLuint sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
 
 
@@ -568,17 +560,19 @@ int main()
 			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
 			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
 			//In this case, lat + 1 moves it down 1
+			
+				sphereIndices[i] = lat * longitudeSteps + lon; // Top left
+				sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
+				sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
 
-			sphereIndices[i] = lat * longitudeSteps + lon; // Top left
-			sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
-			sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
+
+				sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
+				sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
+				sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
+
+			
 
 
-			sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
-			sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
-			sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
-
-			// Move to next set of 6 indices for the next two triangles
 			i += 6;
 		}
 	}
@@ -607,6 +601,80 @@ int main()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	Shader sphereShader("Shaders/LitVertexShader.v", "Shaders/LitFragmentShader.f");
+	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
+	sphereShader.setVec3("lightColor", vec3(1.0f, 1.0f, 1.0f));
+
+	//--- Lighting
+	vec3 lightColour(1.0f, 1.0f, 1.0f);
+
+	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
+
+	lightShader.Use();
+	lightShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));	
+
+	float lightCubeVertices[] = {
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f, 
+		-0.5f,  0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f, 
+
+		-0.5f, -0.5f,  0.5f, 
+		 0.5f, -0.5f,  0.5f, 
+		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f,  
+		-0.5f, -0.5f,  0.5f, 
+
+		-0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f, -0.5f, 
+		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f,  0.5f, 
+		-0.5f,  0.5f,  0.5f,  
+
+		 0.5f,  0.5f,  0.5f, 
+		 0.5f,  0.5f, -0.5f, 
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f,  0.5f, 
+		 0.5f,  0.5f,  0.5f, 
+
+		-0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f,  0.5f,  
+		 0.5f, -0.5f,  0.5f, 
+		-0.5f, -0.5f,  0.5f,  
+		-0.5f, -0.5f, -0.5f,  
+
+		-0.5f,  0.5f, -0.5f,  
+		 0.5f,  0.5f, -0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f, 
+		-0.5f,  0.5f, -0.5f
+	};
+
+	GLuint lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+
+	GLuint lightVBO;
+	glGenBuffers(1, &lightVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, lightVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(lightCubeVertices), lightCubeVertices, GL_STATIC_DRAW);
+
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	vec3 lightPos(3.0f, 3.0f, 2.0f);
+	mat4 lightModel = mat4(1.0f);
+	lightModel = translate(lightModel, lightPos);
+	lightModel = scale(lightModel, vec3(1.0f));
 
 
 	//--- Constant render loop
@@ -788,9 +856,15 @@ int main()
 		}
 
 		//Sphere
-		mat4 sphereModel = mat4(1.0f);		 
+		mat4 sphereModel = mat4(1.0f);
 		sphereModel = translate(sphereModel, vec3(8.0f, 0.0f, -12.0f));
-		ProceduralObjectShader.setMat4("model", sphereModel);		
+
+		sphereShader.Use();
+
+
+		sphereShader.setMat4("model", sphereModel);
+		sphereShader.setMat4("projection", projection);
+		sphereShader.setMat4("view", view);
 
 
 
@@ -801,6 +875,18 @@ int main()
 			cerr << "OpenGL error post proc gen render: " << error << endl;
 		}
 
+		//Light source
+		lightShader.Use();
+		lightShader.setMat4("model", lightModel);
+		lightShader.setMat4("projection", projection);
+		lightShader.setMat4("view", view);
+
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error post light render: " << error << endl;
+		}
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);

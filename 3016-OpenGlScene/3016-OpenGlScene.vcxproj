@@ -151,6 +151,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\FragmentShader.f" />
+    <None Include="Shaders\LightsourceFragmentShader.f" />
+    <None Include="Shaders\LightsourceVertexShader.v" />
+    <None Include="Shaders\LitFragmentShader.f" />
+    <None Include="Shaders\LitVertexShader.v" />
     <None Include="Shaders\TerrainFragmentShader.f" />
     <None Include="Shaders\TerrainVertexShader.v" />
     <None Include="Shaders\VertexShader.v" />
