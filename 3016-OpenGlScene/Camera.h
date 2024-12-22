@@ -53,7 +53,7 @@ public:
 	// constructor with scalar values
 	Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
 	{
-		Position = vec3(posX, 3.0f, posZ);
+		Position = vec3(posX, posY, posZ);
 		WorldUp = vec3(upX, upY, upZ);
 		Yaw = yaw;
 		Pitch = pitch;
@@ -64,7 +64,7 @@ public:
 	mat4 GetViewMatrix()
 	{
 		//This sets the Y value manually to walk on the floor
-		Position = vec3(Position.x, 1.8f, Position.z);
+		Position = vec3(Position.x, Position.y, Position.z);
 		return lookAt(Position, Position + Front, Up);
 
 	}
