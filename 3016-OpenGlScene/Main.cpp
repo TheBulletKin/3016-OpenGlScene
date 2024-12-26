@@ -259,6 +259,13 @@ int main()
 	TexturedObjectShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	TexturedObjectShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	//TexturedObjectShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	TexturedObjectShader.setFloat("light.constant", 1.0f);
+	TexturedObjectShader.setFloat("light.linear", 0.09f);
+	TexturedObjectShader.setFloat("light.quadratic", 0.032f);
+	TexturedObjectShader.setVec3("light.position", camera.Position);
+	TexturedObjectShader.setVec3("light.direction", camera.Front);
+	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
 	
 	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
 
@@ -452,7 +459,7 @@ int main()
 			float scaledY = (float)y * noiseScale;
 
 
-			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;  // Normalize to [0, 1]
+			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;
 		}
 	}
 
@@ -528,8 +535,15 @@ int main()
 			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
-			//model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
+			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
 			TexturedObjectShader.setMat4("model", model);
+
+			TexturedObjectShader.setVec3("lightPos", lightPos);
+			TexturedObjectShader.setVec3("viewPos", camera.Position);
+			TexturedObjectShader.setVec3("light.position", camera.Position);
+			TexturedObjectShader.setVec3("light.direction", camera.Front);
+			TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+			TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
@@ -628,6 +642,10 @@ int main()
 					//TEMP LIGHTING STUFF
 					TexturedObjectShader.setVec3("lightPos", lightPos);
 					TexturedObjectShader.setVec3("viewPos", camera.Position);
+					TexturedObjectShader.setVec3("light.position", camera.Position);
+					TexturedObjectShader.setVec3("light.direction", camera.Front);
+					TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+					TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 					projectileObject->DrawMesh();
 
 
