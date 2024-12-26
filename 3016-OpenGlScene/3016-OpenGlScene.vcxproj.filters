@@ -88,5 +88,11 @@
     <None Include="Shaders\LitFragmentShader.f">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\SphereVertexShader.v">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SphereFragmentShader.f">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

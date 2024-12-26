@@ -338,11 +338,20 @@ int main()
 
 	CreateSphereObject();	
 
-	Shader sphereShader("Shaders/LitVertexShader.v", "Shaders/LitFragmentShader.f");
+	Shader sphereShader("Shaders/SphereVertexShader.v", "Shaders/SphereFragmentShader.f");
 
 	sphereShader.Use();
 	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	sphereShader.setVec3("lightColor", vec3(1.0f, 1.0f, 1.0f));
+	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
+	sphereShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
+	sphereShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+	sphereShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+	sphereShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	sphereShader.setFloat("material.shininess", 32.0f);
+	sphereShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	sphereShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 
 	// ----------------------------------------
@@ -413,10 +422,56 @@ int main()
 	mat4 lightModel = mat4(1.0f);
 	lightModel = translate(lightModel, lightPos);
 	lightModel = scale(lightModel, vec3(1.0f));
-
+	
 	TexturedObjectShader.Use();
 	TexturedObjectShader.setVec3("lightPos", lightPos);
 
+	sphereShader.Use();
+	sphereShader.setVec3("lightPos", lightPos);
+	sphereShader.setBool("flatShading", false);
+
+	// ----------------------------------
+	// Sphere proc gen setup
+	// ---------------------------------
+	const int noiseWidth = 512;
+	const int noiseHeight = 256;
+	vector<float> noiseData(noiseWidth* noiseHeight);
+
+
+	FastNoiseLite sphereNoiseGenerator;
+	sphereNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	sphereNoiseGenerator.SetFrequency(0.08f);
+
+	float noiseScale = 0.25f;
+
+	for (int y = 0; y < noiseHeight; ++y) {
+		for (int x = 0; x < noiseWidth; ++x) {
+			int index = y * noiseWidth + x;
+
+			float scaledX = (float)x * noiseScale;
+			float scaledY = (float)y * noiseScale;
+
+
+			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;  // Normalize to [0, 1]
+		}
+	}
+
+	unsigned int noiseTexture;
+	glGenTextures(1, &noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	
+	sphereShader.setInt("noiseTexture", 1);
+
+	// NOTE:
+	// sphere noise texture bound to texture unit 1
 
 	// -----------------------------------
 	// Main render loop
@@ -463,6 +518,8 @@ int main()
 
 		mat4 view = camera.GetViewMatrix();
 		TexturedObjectShader.setMat4("view", view);
+
+
 
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
@@ -609,19 +666,27 @@ int main()
 			cerr << "OpenGL error post proc gen render: " << error << endl;
 		}
 
-		//Sphere
+		//---------------------------
+		//Sphere displacement and rendering
 		mat4 sphereModel = mat4(1.0f);
 		sphereModel = translate(sphereModel, vec3(8.0f, 0.0f, -12.0f));
 
 		sphereShader.Use();
 
-
 		sphereShader.setMat4("model", sphereModel);
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
+			
+		sphereShader.setFloat("time", currentFrame);
+		sphereShader.setFloat("displacementScale", 1.0f);
+		glActiveTexture(GL_TEXTURE1);
 
+		sphereShader.setVec3("lightPos", lightPos);
+		sphereShader.setVec3("viewPos", camera.Position);
 
+		
 		sceneObjectDictionary["Sphere Object"]->DrawMesh();
+
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -946,7 +1011,7 @@ void CreateSphereObject() {
 
 	//Access with latitude then longitude, starts top left, moves around then down and around again
 	//Each vertex of the sphere is defined by lat and lon, each holding 3 values for position, 3 for colour
-	float sphereVertices[latitudeSteps][longitudeSteps][6];
+	float sphereVertices[latitudeSteps][longitudeSteps][11];
 
 	for (int lat = 0; lat < latitudeSteps; lat++)
 	{
@@ -960,6 +1025,11 @@ void CreateSphereObject() {
 			float y = radius * cos(phi);
 			float z = radius * sin(phi) * sin(theta);
 
+			//Normal vector for each coord is just the position vector normalised 
+			float normalX = x / radius;
+			float normalY = y / radius;
+			float normalZ = z / radius;
+
 			if (fabs(x) < 1e-6) x = 0.0f;
 			if (fabs(y) < 1e-6) y = 0.0f;
 			if (fabs(z) < 1e-6) z = 0.0f;
@@ -968,9 +1038,16 @@ void CreateSphereObject() {
 			sphereVertices[lat][lon][1] = y;
 			sphereVertices[lat][lon][2] = z;
 
-			sphereVertices[lat][lon][3] = 0.0f;
-			sphereVertices[lat][lon][4] = 0.75f;
-			sphereVertices[lat][lon][5] = 0.25f;
+			sphereVertices[lat][lon][3] = (float)lon / (longitudeSteps - 1); 
+			sphereVertices[lat][lon][4] = (float)lat / (latitudeSteps - 1); 
+
+			sphereVertices[lat][lon][5] = 0.0f;
+			sphereVertices[lat][lon][6] = 0.75f;
+			sphereVertices[lat][lon][7] = 0.25f;
+
+			sphereVertices[lat][lon][8] = normalX;
+			sphereVertices[lat][lon][9] = normalY;
+			sphereVertices[lat][lon][10] = normalZ;
 
 
 		}
@@ -989,14 +1066,22 @@ void CreateSphereObject() {
 			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
 			//In this case, lat + 1 moves it down 1
 
-			sphereIndices[i] = lat * longitudeSteps + lon; // Top left
-			sphereIndices[i + 1] = (lat + 1) * longitudeSteps + lon; // Bottom left
-			sphereIndices[i + 2] = lat * longitudeSteps + (lon + 1); // Top right
+			
+			int topLeft = lat * longitudeSteps + lon;          // Top-left vertex
+			int bottomLeft = (lat + 1) * longitudeSteps + lon; // Bottom-left vertex
+			int topRight = lat * longitudeSteps + (lon + 1);   // Top-right vertex
+			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1); // Bottom-right vertex
 
+			
+			sphereIndices[i] = topLeft; 
+			sphereIndices[i + 1] = bottomRight;
+			sphereIndices[i + 2] = topRight; 
 
-			sphereIndices[i + 3] = lat * longitudeSteps + (lon + 1); // Top right
-			sphereIndices[i + 4] = (lat + 1) * longitudeSteps + lon; // Bottom left
-			sphereIndices[i + 5] = (lat + 1) * longitudeSteps + (lon + 1); // Bottom right
+			
+			sphereIndices[i + 3] = bottomRight;
+			sphereIndices[i + 4] = bottomLeft;
+			sphereIndices[i + 5] = topLeft;
+
 
 
 
@@ -1006,11 +1091,13 @@ void CreateSphereObject() {
 	}
 
 
-	int sphereAttributeSize = 6;
+	int sphereAttributeSize = 11;
 	vector<int> sphereSectionSizes =
 	{
 		3, //Position
-		3  //Colour
+		2, //UV
+		3, //Colour
+		3  //Normal
 	};
 
 	int sphereVerticesCount = sizeof(sphereVertices) / sizeof(sphereVertices[0][0]);
