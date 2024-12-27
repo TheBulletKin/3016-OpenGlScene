@@ -16,6 +16,7 @@
 #include "CustomSceneObject.h"
 #include "ArcingProjectileObject.h"
 #include "Shader.h"
+#include "Model.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -503,6 +504,14 @@ int main()
 	
 	sphereShader.setInt("noiseTexture", 1);
 
+
+	// ----------------------------------
+	// Model importing
+	// ----------------------------------
+	
+	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
+	Model ourModel("Media/BackpackModel/backpack.obj");
+
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
 
@@ -814,6 +823,17 @@ int main()
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post light render: " << error << endl;
 		}
+
+		// ---------------------
+		// Imported models
+		// Doesn't work without custom shader
+		modelShader.Use();
+		mat4 modelLocation = mat4(1.0f);
+		modelLocation = translate(modelLocation, vec3(2.0f, 1.0f, 0.0f));
+		modelShader.setMat4("model", modelLocation);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		ourModel.Draw(modelShader);
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
