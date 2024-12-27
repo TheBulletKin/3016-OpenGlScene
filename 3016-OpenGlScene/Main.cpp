@@ -444,6 +444,25 @@ int main()
 	sphereShader.setVec3("lightPos", lightPos);
 	sphereShader.setBool("flatShading", false);
 
+	FastNoiseLite lightColourNoiseGenerator;
+	lightColourNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	lightColourNoiseGenerator.SetFrequency(0.2f);
+
+	vec3 RedColour(1.0f, 0.0f, 0.0f);
+	vec3 OrangeColour(1.0f, 0.65f, 0.0f);
+
+	const int lightNoiseTextureLength = 512;
+	int lightNoiseTextureCurrentIndex = 0;
+	float lightNoiseScale = 0.4f;
+
+	float lightNoiseValues[lightNoiseTextureLength];
+
+	for (int i = 0; i < lightNoiseTextureLength; i++)
+	{
+		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
+	}
+
+
 	// ----------------------------------
 	// Sphere proc gen setup
 	// ---------------------------------
@@ -535,6 +554,15 @@ int main()
 
 		//-----------------------------------
 		// Multiple lights
+		lightNoiseTextureCurrentIndex = (int)(currentFrame * 0.1f * lightNoiseTextureLength) % lightNoiseTextureLength;
+		float noiseValue = lightNoiseValues[lightNoiseTextureCurrentIndex];
+
+
+		vec3 lightColour = RedColour + (OrangeColour - RedColour) * noiseValue;
+			
+			//vec3(noiseValue, 1.0f - noiseValue, 0.5f);
+
+
 		 /*
 		   Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
 		   the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
@@ -549,7 +577,7 @@ int main()
 		// point light 1
 		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
 		TexturedObjectShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
 		TexturedObjectShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
@@ -557,7 +585,7 @@ int main()
 		// point light 2
 		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
 		TexturedObjectShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[1].diffuse", lightColour);
 		TexturedObjectShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
@@ -565,7 +593,7 @@ int main()
 		// point light 3
 		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
 		TexturedObjectShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[2].diffuse", lightColour);
 		TexturedObjectShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
@@ -573,7 +601,7 @@ int main()
 		// point light 4
 		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
 		TexturedObjectShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[3].diffuse", lightColour);
 		TexturedObjectShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
@@ -603,10 +631,10 @@ int main()
 
 			TexturedObjectShader.setVec3("lightPos", lightPos);
 			TexturedObjectShader.setVec3("viewPos", camera.Position);
-			TexturedObjectShader.setVec3("light.position", camera.Position);
-			TexturedObjectShader.setVec3("light.direction", camera.Front);
-			TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-			TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+			//TexturedObjectShader.setVec3("light.position", camera.Position);
+			//TexturedObjectShader.setVec3("light.direction", camera.Front);
+			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
