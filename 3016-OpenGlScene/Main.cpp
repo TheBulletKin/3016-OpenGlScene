@@ -415,6 +415,13 @@ int main()
 		3, //Position
 	};
 
+	vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+
 	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
 	CreateObject("Light Object", lightCubeVertices, lightCubeVerticesCount, NULL, 0, lightCubeSectionSizes, lightCubeAttributesSize);
 
@@ -526,6 +533,62 @@ int main()
 		mat4 view = camera.GetViewMatrix();
 		TexturedObjectShader.setMat4("view", view);
 
+		//-----------------------------------
+		// Multiple lights
+		 /*
+		   Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
+		   the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
+		   by defining light types as classes and set their values in there, or by using a more efficient uniform approach
+		   by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
+		*/
+		// directional light
+		TexturedObjectShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+		TexturedObjectShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		TexturedObjectShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+		// point light 1
+		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+		TexturedObjectShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		TexturedObjectShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
+		// point light 2
+		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+		TexturedObjectShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+		TexturedObjectShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
+		// point light 3
+		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+		TexturedObjectShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+		TexturedObjectShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
+		// point light 4
+		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+		TexturedObjectShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+		TexturedObjectShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		TexturedObjectShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[3].quadratic", 0.032f);
+		// spotLight
+		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
+		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
+		TexturedObjectShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		TexturedObjectShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("spotLight.constant", 1.0f);
+		TexturedObjectShader.setFloat("spotLight.linear", 0.09f);
+		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
+		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 
 		//--- Render cubes		
