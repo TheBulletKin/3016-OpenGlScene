@@ -159,6 +159,8 @@
     <None Include="Shaders\LightsourceVertexShader.v" />
     <None Include="Shaders\LitFragmentShader.f" />
     <None Include="Shaders\LitVertexShader.v" />
+    <None Include="Shaders\ModelFragmentShader.f" />
+    <None Include="Shaders\ModelVertexShader.v" />
     <None Include="Shaders\SphereFragmentShader.f" />
     <None Include="Shaders\SphereVertexShader.v" />
     <None Include="Shaders\TerrainFragmentShader.f" />

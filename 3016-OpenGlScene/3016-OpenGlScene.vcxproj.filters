@@ -106,5 +106,11 @@
     <None Include="Shaders\SphereFragmentShader.f">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\ModelFragmentShader.f">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ModelVertexShader.v">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
