@@ -78,7 +78,10 @@ map<string, CustomSceneObject*> sceneObjectDictionary;
 
 vector<ArcingProjectileObject*> projectileObjects;
 
+struct Point {
+	float x, y, z;
 
+};
 
 int main()
 {
@@ -658,8 +661,8 @@ int main()
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
 		//-- Random stuff for projectile generation
-		random_device rd;
-		mt19937 gen(rd());
+		random_device rd; //Seed generation
+		mt19937 gen(rd()); //Random value generator using the this mt19937 method. Creates large integers
 		uniform_real_distribution<> dis(0.0, 1.0);
 
 		//-- Projectile spawning
@@ -676,21 +679,16 @@ int main()
 				cerr << "OpenGL error after VBO binding: " << error << endl;
 			}
 
+			
+			Point topLeft = { -10.0, 0.0, -5.0 };   
+			Point bottomRight = { 10.0, 0.0, 5.0 };			
 
+			
+			double randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
+			double randomY = bottomRight.y + (topLeft.y - bottomRight.y) * dis(gen);
+			double randomZ = topLeft.z; 
 
-			//Rand does not return a normalised value, it could return anything from 0 to potentially 32767. Divide by the maximum value to get a normalised value
-			//2 * pi represents a full circle in radians, so dividing that by the random value gives a sector
-			double angle = dis(gen) * 2.0 * PI;
-
-			// Generate a random radius using sqrt method for uniform distribution
-			double r = spawnRadius * sqrt(dis(gen));
-
-			// Convert to Cartesian coordinates
-			double x = spawnCentre.x + r * cos(angle);
-			double z = spawnCentre.z + r * sin(angle);
-			double y = spawnCentre.y;
-
-			vec3 spawnPosition = vec3(x, y, z);
+			vec3 spawnPosition = vec3(randomX, randomY, randomZ);			
 
 			//Value between 0 and 1 as before, multiply by what is 45 degrees in radians, means the resulting angle will be less than 45. Could set it to 2*pi for a full circle for instance
 			//Vertical angle value
