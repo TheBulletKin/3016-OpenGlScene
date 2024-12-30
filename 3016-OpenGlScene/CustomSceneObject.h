@@ -21,6 +21,7 @@ public:
 	void PrepareAndBindVBO(float vertices[], size_t verticesDataSize, int verticesCount);
 	void PrepareAndBindVBO(unsigned int VBO, int verticesCount);
 	void PrepareAndBindEBO(unsigned int indices[], size_t indicesDataSize, int indicesCount);	
+	void PrepareAndBindEBO(unsigned int VBO, int indicesCount);
 	void PrepareVertexAttributeArrays(std::vector<int>& sectionSizes, int vertexAttributeCount);
 	void DrawMesh();
 	unsigned int GetVAOID();
@@ -31,9 +32,10 @@ public:
 	unsigned int VBO;
 	unsigned int EBO;
 	Shader* objectShader;
-private:	
 	int verticesCount = 0;
-	int indicesCount = 0;	
+	int indicesCount = 0;
+private:	
+		
 	
 };
 

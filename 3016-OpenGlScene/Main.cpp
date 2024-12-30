@@ -42,12 +42,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-//--- Other methods
-void processInput(GLFWwindow* window);
-void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
-void LoadTexture(unsigned int& textureId, const char* filePath);
-void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
-void CreateSphereObject();
+
 
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
@@ -77,6 +72,21 @@ float lastFrame = 0.0f;
 map<string, CustomSceneObject*> sceneObjectDictionary;
 
 vector<ArcingProjectileObject*> projectileObjects;
+
+//--- Sphere object constants
+const float sphereRadius = 1.2f;
+const int longitudeSteps = 36;
+const int latitudeSteps = 18;
+const int sphereVerticesCount = latitudeSteps * longitudeSteps;
+const int sphereIndicesCount = (longitudeSteps - 1) * (latitudeSteps - 1) * 6;
+
+
+//--- Other methods
+void processInput(GLFWwindow* window);
+void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
+void LoadTexture(unsigned int& textureId, const char* filePath);
+void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
+void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]);
 
 struct Point {
 	float x, y, z;
@@ -347,7 +357,11 @@ int main()
 
 	*/
 
-	CreateSphereObject();	
+	float sphereVertices[latitudeSteps][longitudeSteps][11];
+	unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
+
+
+	CreateSphereObject(sphereVertices, sphereIndices);	
 
 	Shader sphereShader("Shaders/SphereVertexShader.v", "Shaders/SphereFragmentShader.f");
 
@@ -660,6 +674,10 @@ int main()
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
+
+
+
+
 		//-- Random stuff for projectile generation
 		random_device rd; //Seed generation
 		mt19937 gen(rd()); //Random value generator using the this mt19937 method. Creates large integers
@@ -670,9 +688,13 @@ int main()
 		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
 			ArcingProjectileObject* newProjectileObject = new ArcingProjectileObject();
-			newProjectileObject->VAO = sceneObjectDictionary["Projectile Base"]->VAO;
-			newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Projectile Base"]->VBO, sizeof(cubeVertices) / (5 * sizeof(float)));
+			//newProjectileObject->VAO = sceneObjectDictionary["Projectile Base"]->VAO;
+			//newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Projectile Base"]->VBO, sizeof(cubeVertices) / (5 * sizeof(float)));
 
+			newProjectileObject->VAO = sceneObjectDictionary["Sphere Object"]->VAO;	
+			
+			newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Sphere Object"]->VBO, sphereVerticesCount);
+			newProjectileObject->PrepareAndBindEBO(sceneObjectDictionary["Sphere Object"]->EBO, sphereIndicesCount);
 
 			GLenum error;
 			while ((error = glGetError()) != GL_NO_ERROR) {
@@ -716,7 +738,7 @@ int main()
 
 			//Random gravity multiplier
 			float gravityMultiMin = 0.0f;
-			float gravityMultiplier = gravityMultiMin + (0.12f - gravityMultiMin) * dis(gen);
+			float gravityMultiplier = gravityMultiMin + (0.04f - gravityMultiMin) * dis(gen);
 
 			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame, gravityMultiplier, movespeedMultiplier);
 
@@ -743,23 +765,39 @@ int main()
 				else {
 					mat4 projectileModel = mat4(1.0f);
 					projectileModel = translate(projectileModel, projectileObject->initialPosition + (projectileObject->currentPosition - projectileObject->initialPosition));
-					TexturedObjectShader.setMat4("model", projectileModel);
-
-					GLenum error;
-					while ((error = glGetError()) != GL_NO_ERROR) {
-						cerr << "OpenGL error pre render: " << error << endl;
-					}
 
 
+					//TexturedObjectShader.setMat4("model", projectileModel);
+
+					
 					//TEMP LIGHTING STUFF
+					/*
 					TexturedObjectShader.setVec3("lightPos", lightPos);
 					TexturedObjectShader.setVec3("viewPos", camera.Position);
 					TexturedObjectShader.setVec3("light.position", camera.Position);
 					TexturedObjectShader.setVec3("light.direction", camera.Front);
 					TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
 					TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-					projectileObject->DrawMesh();
+					projectileObject->DrawMesh();*/
 
+					sphereShader.Use();
+
+					sphereShader.setMat4("model", projectileModel);
+					sphereShader.setMat4("projection", projection);
+					sphereShader.setMat4("view", view);
+
+					sphereShader.setFloat("time", currentFrame);
+					sphereShader.setFloat("displacementScale", 0.4f);
+					glActiveTexture(GL_TEXTURE1);
+
+					sphereShader.setVec3("lightPos", lightPos);
+					sphereShader.setVec3("viewPos", camera.Position);
+
+					GLenum error;
+					while ((error = glGetError()) != GL_NO_ERROR) {
+						cerr << "OpenGL error pre render: " << error << endl;
+					}
+					projectileObject->DrawMesh();
 
 					error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1145,14 +1183,12 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 	
 }
 
-void CreateSphereObject() {
-	float radius = 2.0f;
-	const int longitudeSteps = 36;
-	const int latitudeSteps = 18;
+void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]) {
+	
 
+	//Fill vertices array
 	//Access with latitude then longitude, starts top left, moves around then down and around again
 	//Each vertex of the sphere is defined by lat and lon, each holding 3 values for position, 3 for colour
-	float sphereVertices[latitudeSteps][longitudeSteps][11];
 
 	for (int lat = 0; lat < latitudeSteps; lat++)
 	{
@@ -1160,16 +1196,16 @@ void CreateSphereObject() {
 		{
 			float theta = 2.0f * PI * lon / longitudeSteps;
 			float phi = PI * lat / (latitudeSteps - 1);
-
+			
 			//Performs the formulas described above
-			float x = radius * sin(phi) * cos(theta);
-			float y = radius * cos(phi);
-			float z = radius * sin(phi) * sin(theta);
+			float x = sphereRadius * sin(phi) * cos(theta);
+			float y = sphereRadius * cos(phi);
+			float z = sphereRadius * sin(phi) * sin(theta);
 
 			//Normal vector for each coord is just the position vector normalised 
-			float normalX = x / radius;
-			float normalY = y / radius;
-			float normalZ = z / radius;
+			float normalX = x / sphereRadius;
+			float normalY = y / sphereRadius;
+			float normalZ = z / sphereRadius;
 
 			if (fabs(x) < 1e-6) x = 0.0f;
 			if (fabs(y) < 1e-6) y = 0.0f;
@@ -1194,11 +1230,9 @@ void CreateSphereObject() {
 		}
 	}
 
-	//Indices array is one dimensional, but assumes size 3 for each element
-	unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
 
 
-
+	//Fill indices array
 	int i = 0;
 	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
 		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
@@ -1241,10 +1275,11 @@ void CreateSphereObject() {
 		3  //Normal
 	};
 
-	int sphereVerticesCount = sizeof(sphereVertices) / sizeof(sphereVertices[0][0]);
-	int indicesCount = sizeof(sphereIndices) / sizeof(sphereIndices[0]);
-	size_t indicesDataSize = indicesCount * sizeof(unsigned int);
-	CreateObject("Sphere Object", sphereVertices[0][0], sphereVerticesCount, &sphereIndices[0], indicesCount, sphereSectionSizes, sphereAttributeSize);
+	//Removed when array was changed to pass in as a pointer
+	//int sphereVerticesCount = sizeof(sphereVertices) / sizeof(sphereVertices[0][0]);
+	//int indicesCount = sizeof(sphereIndices) / sizeof(sphereIndices[0]);d
+	size_t indicesDataSize = sphereIndicesCount * sizeof(unsigned int);
+	CreateObject("Sphere Object", sphereVertices[0][0], sphereVerticesCount, &sphereIndices[0], sphereIndicesCount, sphereSectionSizes, sphereAttributeSize);
 
 }
 

@@ -61,6 +61,12 @@ void CustomSceneObject::PrepareAndBindEBO(unsigned int indices[], size_t indices
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesDataSize, indices, GL_STATIC_DRAW);
 }
 
+void CustomSceneObject::PrepareAndBindEBO(unsigned int VBO, int indicesCount) {
+	this->EBO = EBO;
+	this->indicesCount = indicesCount;
+	
+}
+
 
 /// <summary>
 /// 
