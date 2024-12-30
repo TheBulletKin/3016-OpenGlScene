@@ -242,7 +242,7 @@ int main()
 	//--- Projectile spawning variables
 	vec3 spawnCentre = vec3(0.0f, 0.0f, 0.0f);
 	float spawnRadius = 3.0f;
-	float projectileSpawnCooldown = 0.2f;
+	float projectileSpawnCooldown = 2.0f;
 	float projectileSpawnTimer = 0.0f;
 
 
@@ -513,7 +513,7 @@ int main()
 	// ----------------------------------
 	
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
-	Model ourModel("Media/BackpackModel/backpack.obj");
+	//Model ourModel("Media/BackpackModel/backpack.obj");
 
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
@@ -677,40 +677,54 @@ int main()
 			GLenum error;
 			while ((error = glGetError()) != GL_NO_ERROR) {
 				cerr << "OpenGL error after VBO binding: " << error << endl;
-			}
-
+			}			
 			
-			Point topLeft = { -10.0, 0.0, -5.0 };   
-			Point bottomRight = { 10.0, 0.0, 5.0 };			
+			Point topLeft = { -10.0f, 0.1f, -20.0f };
+			Point bottomRight = { 10.0f, 0.1f, 0.0f };
 
+			float ySpawnValueMin = 0.8f;
+			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
 			
-			double randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
-			double randomY = bottomRight.y + (topLeft.y - bottomRight.y) * dis(gen);
-			double randomZ = topLeft.z; 
+			float randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
+			float randomY = ySpawnValue;
+			float randomZ = topLeft.z + (bottomRight.z - topLeft.z) * dis(gen);
 
-			vec3 spawnPosition = vec3(randomX, randomY, randomZ);			
+			vec3 spawnPosition = vec3(randomX, randomY, randomZ);
 
-			//Value between 0 and 1 as before, multiply by what is 45 degrees in radians, means the resulting angle will be less than 45. Could set it to 2*pi for a full circle for instance
-			//Vertical angle value
-			float theta = dis(gen) * (PI / 4);
+			//Angle when looking down the y axis
+			float azimuth = dis(gen) * 2 * PI; 
+			
+			//Phi is the vertical angle from the horizontal plane
+			float minPhi = PI / 6;  // 30 degrees in radians
+			float maxPhi = 4 * PI / 9;  // 80 degrees in radians
+		
+			float phi = minPhi + (maxPhi - minPhi) * dis(gen);
 
-			//Horizontal angle value
-			float azimuth = dis(gen) * (2 * PI);
+			float x = sin(phi) * cos(azimuth);
+			float y = cos(phi);
+			float z = sin(phi) * sin(azimuth);
 
-			float vx = sin(theta) * cos(azimuth);
-			float vy = cos(theta);
-			float vz = sin(theta) * sin(azimuth);
+			float initVelMin = 1.8f;
+			float velocityMulitplier = initVelMin + (2.2f - initVelMin) * dis(gen);
+			vec3 spawnVelocity = normalize(vec3(x, y, z));
+			
+			spawnVelocity = spawnVelocity * velocityMulitplier;
 
-			vec3 spawnVelocity = normalize(vec3(vx, vy, vz));
-			spawnVelocity = spawnVelocity * 10.0f;
+			//Random speed multiplaier
+			float speedMin = 0.3f;
+			float movespeedMultiplier = speedMin + (0.7f - speedMin) * dis(gen);
 
-			//cout << "Random Point: (" << x << ", " << y << ", " << z << ")\n";
-			//cout << "Random Velocity: (" << vx << ", " << abs(vy) << ", " << vz << ")\n";
+			//Random gravity multiplier
+			float gravityMultiMin = 0.0f;
+			float gravityMultiplier = gravityMultiMin + (0.12f - gravityMultiMin) * dis(gen);
 
-
-			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame);
+			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame, gravityMultiplier, movespeedMultiplier);
 
 			projectileObjects.push_back(newProjectileObject);
+
+			//Random spawn cooldown
+			float cooldownMin = 2.0f;
+			projectileSpawnCooldown = cooldownMin + (8.0f - cooldownMin) * dis(gen);
 
 			projectileSpawnTimer = 0.0f;
 		}
@@ -794,7 +808,7 @@ int main()
 		sphereShader.setMat4("view", view);
 			
 		sphereShader.setFloat("time", currentFrame);
-		sphereShader.setFloat("displacementScale", 1.0f);
+		sphereShader.setFloat("displacementScale", 0.4f);
 		glActiveTexture(GL_TEXTURE1);
 
 		sphereShader.setVec3("lightPos", lightPos);
@@ -815,7 +829,7 @@ int main()
 		lightShader.setMat4("projection", projection);
 		lightShader.setMat4("view", view); 
 
-		sceneObjectDictionary["Light Object"]->DrawMesh();
+		//sceneObjectDictionary["Light Object"]->DrawMesh();
 		
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -831,7 +845,7 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		ourModel.Draw(modelShader);
+		//ourModel.Draw(modelShader);
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);

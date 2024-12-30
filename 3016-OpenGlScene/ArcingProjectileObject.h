@@ -11,7 +11,7 @@ class ArcingProjectileObject : public CustomSceneObject
 public:
 	ArcingProjectileObject() : CustomSceneObject() {};
 	~ArcingProjectileObject() {};
-	void Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime);
+	void Launch(vec3 initialVelocity, vec3 initialPosition, float initialTime, float gravityMultiplier, float movespeedMultiplier);
 	void UpdatePosition(float deltaTime);
 	bool ShouldDestroy();
 
@@ -21,6 +21,10 @@ public:
 	float initialTime;
 	float timeSinceStart;
 	float gravity = 9.81f;
+	float gravityMultiplier;
+	float movespeedMultiplier;
+	float lifetimeMax;
+	
 private:
 	
 };
