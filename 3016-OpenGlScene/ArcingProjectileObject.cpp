@@ -10,7 +10,7 @@ void ArcingProjectileObject::Launch(vec3 initialVelocity, vec3 initialPosition, 
 	this->movespeedMultiplier = movespeedMultiplier;
 	
 	this->timeSinceStart = 0.0f;
-	this->lifetimeMax = 8.0f;
+	this->lifetimeMax = 20.0f;
 	
 }
 
