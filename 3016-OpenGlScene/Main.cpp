@@ -530,6 +530,8 @@ int main()
 	//Model ourModel("Media/BackpackModel/backpack.obj");
 	Model ourModel("Media/Tree/Tree.obj");
 
+	Model wallModel("Media/Wall/Wall.fbx");
+	 
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
 
@@ -880,11 +882,15 @@ int main()
 		// Doesn't work without custom shader
 		modelShader.Use();
 		mat4 modelLocation = mat4(1.0f);
-		modelLocation = translate(modelLocation, vec3(2.0f, 1.0f, 0.0f));
+		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
+		modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		ourModel.Draw(modelShader);
+		//ourModel.Draw(modelShader);
+		wallModel.Draw(modelShader);
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
