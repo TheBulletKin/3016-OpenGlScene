@@ -528,6 +528,7 @@ int main()
 	
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
+	Model ourModel("Media/Tree/Tree.obj");
 
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
@@ -883,7 +884,7 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		//ourModel.Draw(modelShader);
+		ourModel.Draw(modelShader);
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
