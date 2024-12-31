@@ -528,8 +528,8 @@ int main()
 	
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
-	Model ourModel("Media/Tree/Tree.obj");
-
+	Model treeModel("Media/Tree/Tree.obj");
+	Model lampModel("Media/Lamp/lamp.obj");
 	Model wallModel("Media/Wall/Wall.fbx");
 	 
 	// NOTE:
@@ -883,13 +883,16 @@ int main()
 		modelShader.Use();
 		mat4 modelLocation = mat4(1.0f);
 		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
+		modelShader.setMat4("model", modelLocation);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		ourModel.Draw(modelShader);
 		modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
 		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
 		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
 		modelShader.setMat4("model", modelLocation);
-		modelShader.setMat4("projection", projection);
-		modelShader.setMat4("view", view);
-		//ourModel.Draw(modelShader);
+		
+		
 		wallModel.Draw(modelShader);
 
 		//--- Swap buffers to render to screen, poll IO events
