@@ -1,15 +1,15 @@
 #include "Mesh.h"
 
-Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, unsigned int baseTextureUnit)
 {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
 
-    setupMesh();
+    setupMesh(baseTextureUnit);
 }
 
-void Mesh::setupMesh()
+void Mesh::setupMesh(unsigned int baseTextureUnit)
 {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -34,16 +34,20 @@ void Mesh::setupMesh()
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
+    //TEMP TEXTUER ASSIGNING
+    glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
+    glBindTexture(GL_TEXTURE_2D, textures[0].id);
+
     glBindVertexArray(0);
 }
 
-void Mesh::Draw(Shader& shader)
+void Mesh::Draw(Shader& shader, unsigned int baseTextureUnit)
 {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     for (unsigned int i = 0; i < textures.size(); i++)
     {
-        glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+       // glActiveTexture(GL_TEXTURE0 + baseTextureUnit + i); // activate proper texture unit before binding
         // retrieve texture number (the N in diffuse_textureN)
         string number;
         string name = textures[i].type;
@@ -52,13 +56,19 @@ void Mesh::Draw(Shader& shader)
         else if (name == "texture_specular")
             number = to_string(specularNr++);
 
-        shader.setInt(("material." + name + number).c_str(), i);
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        //shader.setInt(("material." + name + number).c_str(), i);
+       // glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
-    glActiveTexture(GL_TEXTURE0);
+    shader.setInt(("texture_diffuse1"), baseTextureUnit);
+    glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
 
+    GLenum error;
+    while ((error = glGetError()) != GL_NO_ERROR) {
+        cerr << "OpenGL error in mesh drawing: " << error << endl;
+    }
     // draw mesh
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+
 }

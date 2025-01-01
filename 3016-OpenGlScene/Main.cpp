@@ -12,11 +12,11 @@
 #include <random>
 #include <vector>
 
+#include "ArcingProjectileObject.h"
 #include "Camera.h"
 #include "CustomSceneObject.h"
-#include "ArcingProjectileObject.h"
-#include "Shader.h"
 #include "Model.h"
+#include "Shader.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -80,6 +80,19 @@ const int latitudeSteps = 18;
 const int sphereVerticesCount = latitudeSteps * longitudeSteps;
 const int sphereIndicesCount = (longitudeSteps - 1) * (latitudeSteps - 1) * 6;
 
+// -- Texture holder
+
+map<string, unsigned int> texNameToId;
+map<string, unsigned int> texNameToUnitNo;
+
+//TODO
+/* Each model needs to hold its texture id when it is created, used when it renders. Don't hold that on here.
+* By holding the generated texture IDs I don't need to worry about the order.
+* One holds the actual ID, required when binding to texture unit.
+* Other holds texture unit number
+
+
+*/
 
 //--- Other methods
 void processInput(GLFWwindow* window);
@@ -198,7 +211,7 @@ int main()
 		vec3(1.5f,  2.0f, -2.5f),
 		vec3(1.5f,  0.2f, -1.5f),
 		vec3(-1.3f,  1.0f, -1.5f)
-	};	
+	};
 
 	int cubeVertexSize = 8;
 	vector<int> cubeSectionSizes =
@@ -228,7 +241,7 @@ int main()
 	unsigned int planeIndices[] = {
 		0, 1, 3, //First triangle
 		1, 2, 3  //Second triangle
-	};		
+	};
 
 	int planeAttributeSize = 5;
 	vector<int> planeAttributeSizes =
@@ -241,7 +254,7 @@ int main()
 	int planeIndicesCount = sizeof(planeIndices) / sizeof(planeIndices[0]);
 
 	CreateObject("Plane Object", planeVertices, planeIndicesCount, planeIndices, planeIndicesCount, planeAttributeSizes, planeAttributeSize);
-	
+
 
 	// ----------------------------------------------
 	// Projectile cube prefab creation
@@ -262,7 +275,9 @@ int main()
 	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
 	TexturedObjectShader.Use();
 	//The texture sampler on the fragment shader is given value '0' now, means later on in the render loop it will use texture unit zero
-	TexturedObjectShader.setInt("texture1", 0);
+	
+	
+	//TexturedObjectShader.setInt("texture1", texturePos);
 	TexturedObjectShader.setBool("useTexture", false);
 	TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	TexturedObjectShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
@@ -280,18 +295,30 @@ int main()
 	TexturedObjectShader.setVec3("light.position", camera.Position);
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
-	
+
 	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
 
 	// --------------------------------------------
 	// Texture loading
 	// --------------------------------------------
-	unsigned int texture1;
+	unsigned int containerTextureId;
 
-	LoadTexture(texture1, "Media/container.jpg");	
+	LoadTexture(containerTextureId, "Media/container.jpg");
 
 
+	//-------------------------------------
+		// Texture assigning
+		// Set one of the texture units to the texture created, to use all textures in one draw call
+		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
 	
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, containerTextureId); //Like last time, future operations will affect this texture
+	//Texture 0 holds the container texture
+
+
+	texNameToId["container"] = containerTextureId;
+	texNameToUnitNo["container"] = 0;
 
 
 	//--- Coordinate space and 3D
@@ -316,7 +343,7 @@ int main()
 	*
 	*/
 
-	
+
 
 	// -----------------------------------------
 	// Procedural terrain generation
@@ -328,7 +355,7 @@ int main()
 
 	CreateProceduralTerrain(&terrainVertices[0][0], terrainVerticesCount);
 
-	
+
 
 
 	// ----------------------------------------
@@ -361,7 +388,7 @@ int main()
 	unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
 
 
-	CreateSphereObject(sphereVertices, sphereIndices);	
+	CreateSphereObject(sphereVertices, sphereIndices);
 
 	Shader sphereShader("Shaders/SphereVertexShader.v", "Shaders/SphereFragmentShader.f");
 
@@ -377,6 +404,8 @@ int main()
 	sphereShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 	sphereShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+	
 
 
 	// ----------------------------------------
@@ -448,13 +477,13 @@ int main()
 	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
 
 	lightShader.Use();
-	lightShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));	
+	lightShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));
 
 	vec3 lightPos(5.0f, 7.0f, -2.0f);
 	mat4 lightModel = mat4(1.0f);
 	lightModel = translate(lightModel, lightPos);
 	lightModel = scale(lightModel, vec3(1.0f));
-	
+
 	TexturedObjectShader.Use();
 	TexturedObjectShader.setVec3("lightPos", lightPos);
 
@@ -486,7 +515,7 @@ int main()
 	// ---------------------------------
 	const int noiseWidth = 512;
 	const int noiseHeight = 256;
-	vector<float> noiseData(noiseWidth* noiseHeight);
+	vector<float> noiseData(noiseWidth * noiseHeight);
 
 
 	FastNoiseLite sphereNoiseGenerator;
@@ -509,29 +538,60 @@ int main()
 
 	unsigned int noiseTexture;
 	glGenTextures(1, &noiseTexture);
+
+	texNameToId["noiseTexture"] = noiseTexture;
+	texNameToUnitNo["noiseTexture"] = 1;
+
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
 	glBindTexture(GL_TEXTURE_2D, noiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, noiseTexture);
 	
-	sphereShader.setInt("noiseTexture", 1);
+
+	
+
+	sphereShader.setInt("noiseTexture", texNameToUnitNo["noiseTexture"]);
 
 
 	// ----------------------------------
 	// Model importing
 	// ----------------------------------
-	
+
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
-	Model treeModel("Media/Tree/Tree.obj");
-	Model lampModel("Media/Lamp/lamp.obj");
-	Model wallModel("Media/Wall/Wall.fbx");
-	 
+	texNameToUnitNo["treeTexture"] = 2;
+	
+	Model treeModel("Media/Tree/Tree.obj", texNameToUnitNo["treeTexture"]);
+	
+
+	//texturesList.push_back("lampTexture");
+	//it = find(texturesList.begin(), texturesList.end(), "lampTexture");
+	//texturePos = it - texturesList.begin();
+	//Model lampModel("Media/Lamp/lamp.obj", texturePos);
+	
+
+	texNameToUnitNo["wallTexture"] = 3;
+	Model wallModel("Media/Wall/Wall.fbx", texNameToUnitNo["wallTexture"]);
+	
+
+	vec3 treePositions[] = {
+		vec3(0.0f,  0.0f,  0.0f),
+		vec3(2.0f,  0.0f, -15.0f),
+		vec3(-1.5f, 0.0f, -2.5f),
+		vec3(-3.8f, 0.0f, -12.3f),
+		vec3(2.4f, 0.0f, -3.5f),
+		vec3(-1.7f,  0.0f, -7.5f),
+		vec3(1.3f, 0.0f, -2.5f),
+		vec3(1.5f,  0.0f, -2.5f),
+		vec3(1.5f,  0.0f, -1.5f),
+		vec3(-1.3f,  0.0f, -1.5f)
+	};
+
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
 
@@ -556,13 +616,7 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//-------------------------------------
-		// Texture assigning
-		// Set one of the texture units to the texture created, to use all textures in one draw call
-		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1); //Like last time, future operations will affect this texture
-
+		
 
 		//---------------------------------------
 		// Activate shader
@@ -588,17 +642,17 @@ int main()
 
 
 		vec3 lightColour = RedColour + (OrangeColour - RedColour) * noiseValue;
-			
-			//vec3(noiseValue, 1.0f - noiseValue, 0.5f);
+
+		//vec3(noiseValue, 1.0f - noiseValue, 0.5f);
 
 
-		 /*
-		   Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
-		   the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
-		   by defining light types as classes and set their values in there, or by using a more efficient uniform approach
-		   by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
-		*/
-		// directional light
+	 /*
+	   Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
+	   the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
+	   by defining light types as classes and set their values in there, or by using a more efficient uniform approach
+	   by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
+	*/
+	// directional light
 		TexturedObjectShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
 		TexturedObjectShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
 		TexturedObjectShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
@@ -668,7 +722,44 @@ int main()
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
 
+		//--- Render trees
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			// calculate the model matrix for each object and pass it to shader before drawing
+			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
+			model = translate(model, treePositions[i]);
+			
+			//TexturedObjectShader.setMat4("model", model);
+
+			//TexturedObjectShader.setVec3("lightPos", lightPos);
+			//TexturedObjectShader.setVec3("viewPos", camera.Position);
+			//TexturedObjectShader.setVec3("light.position", camera.Position);
+			//TexturedObjectShader.setVec3("light.direction", camera.Front);
+			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+
+			//modelShader.setMat4("model", model);
+			//modelShader.setMat4("projection", projection);
+			//modelShader.setMat4("view", view);
+			//treeModel.Draw(modelShader);
+
+
+			modelShader.Use();			
+			
+			modelShader.setMat4("model", model);
+			modelShader.setMat4("projection", projection);
+			modelShader.setMat4("view", view);			
+
+			treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+			//sceneObjectDictionary["Cube Object"]->DrawMesh();
+			GLenum error;
+			while ((error = glGetError()) != GL_NO_ERROR) {
+				cerr << "OpenGL error post tree render: " << error << endl;
+			}
+		}
+
 		//--- Render Plane
+		TexturedObjectShader.Use();
 		mat4 model = mat4(1.0f);
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 		model = scale(model, vec3(8.0f, 8.0f, 8.0f));
@@ -677,7 +768,10 @@ int main()
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
-
+		GLenum error;
+		while ((error = glGetError()) != GL_NO_ERROR) {
+			cerr << "OpenGL error after plane rendering: " << error << endl;
+		}
 
 
 
@@ -694,22 +788,22 @@ int main()
 			//newProjectileObject->VAO = sceneObjectDictionary["Projectile Base"]->VAO;
 			//newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Projectile Base"]->VBO, sizeof(cubeVertices) / (5 * sizeof(float)));
 
-			newProjectileObject->VAO = sceneObjectDictionary["Sphere Object"]->VAO;	
-			
+			newProjectileObject->VAO = sceneObjectDictionary["Sphere Object"]->VAO;
+
 			newProjectileObject->PrepareAndBindVBO(sceneObjectDictionary["Sphere Object"]->VBO, sphereVerticesCount);
 			newProjectileObject->PrepareAndBindEBO(sceneObjectDictionary["Sphere Object"]->EBO, sphereIndicesCount);
 
 			GLenum error;
 			while ((error = glGetError()) != GL_NO_ERROR) {
 				cerr << "OpenGL error after VBO binding: " << error << endl;
-			}			
-			
+			}
+
 			Point topLeft = { -10.0f, 0.1f, -20.0f };
 			Point bottomRight = { 10.0f, 0.1f, 0.0f };
 
 			float ySpawnValueMin = 0.8f;
 			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
-			
+
 			float randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
 			float randomY = ySpawnValue;
 			float randomZ = topLeft.z + (bottomRight.z - topLeft.z) * dis(gen);
@@ -717,12 +811,12 @@ int main()
 			vec3 spawnPosition = vec3(randomX, randomY, randomZ);
 
 			//Angle when looking down the y axis
-			float azimuth = dis(gen) * 2 * PI; 
-			
+			float azimuth = dis(gen) * 2 * PI;
+
 			//Phi is the vertical angle from the horizontal plane
 			float minPhi = PI / 6;  // 30 degrees in radians
 			float maxPhi = 4 * PI / 9;  // 80 degrees in radians
-		
+
 			float phi = minPhi + (maxPhi - minPhi) * dis(gen);
 
 			float x = sin(phi) * cos(azimuth);
@@ -732,7 +826,7 @@ int main()
 			float initVelMin = 1.8f;
 			float velocityMulitplier = initVelMin + (2.2f - initVelMin) * dis(gen);
 			vec3 spawnVelocity = normalize(vec3(x, y, z));
-			
+
 			spawnVelocity = spawnVelocity * velocityMulitplier;
 
 			//Random speed multiplaier
@@ -772,7 +866,7 @@ int main()
 
 					//TexturedObjectShader.setMat4("model", projectileModel);
 
-					
+
 					//TEMP LIGHTING STUFF
 					/*
 					TexturedObjectShader.setVec3("lightPos", lightPos);
@@ -791,20 +885,25 @@ int main()
 
 					sphereShader.setFloat("time", currentFrame);
 					sphereShader.setFloat("displacementScale", 0.4f);
-					glActiveTexture(GL_TEXTURE1);
+					//Texture 1 for sphere noise texture
+
+
+					
+
+
+					glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
+					
+					
 
 					sphereShader.setVec3("lightPos", lightPos);
 					sphereShader.setVec3("viewPos", camera.Position);
 
-					GLenum error;
-					while ((error = glGetError()) != GL_NO_ERROR) {
-						cerr << "OpenGL error pre render: " << error << endl;
-					}
+					
 					projectileObject->DrawMesh();
 
-					error;
+					GLenum error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
-						cerr << "OpenGL error post render: " << error << endl;
+						cerr << "OpenGL error post projectile render: " << error << endl;
 					}
 
 					++i;
@@ -831,8 +930,8 @@ int main()
 		sceneObjectDictionary["Procedural Terrain"]->DrawMesh();
 
 
-		
-		GLenum error;
+
+		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post proc gen render: " << error << endl;
 		}
@@ -847,31 +946,36 @@ int main()
 		sphereShader.setMat4("model", sphereModel);
 		sphereShader.setMat4("projection", projection);
 		sphereShader.setMat4("view", view);
-			
+
 		sphereShader.setFloat("time", currentFrame);
 		sphereShader.setFloat("displacementScale", 0.4f);
-		glActiveTexture(GL_TEXTURE1);
+
+		
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
+		
+		glBindTexture(GL_TEXTURE_2D, texNameToId["noiseTexture"]);
+
 
 		sphereShader.setVec3("lightPos", lightPos);
 		sphereShader.setVec3("viewPos", camera.Position);
 
-		
+
 		sceneObjectDictionary["Sphere Object"]->DrawMesh();
 
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error post proc gen render: " << error << endl;
+			cerr << "OpenGL error post sphere render: " << error << endl;
 		}
 
 		//Light source
 		lightShader.Use();
 		lightShader.setMat4("model", lightModel);
 		lightShader.setMat4("projection", projection);
-		lightShader.setMat4("view", view); 
+		lightShader.setMat4("view", view);
 
 		//sceneObjectDictionary["Light Object"]->DrawMesh();
-		
+
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error post light render: " << error << endl;
@@ -886,14 +990,31 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		ourModel.Draw(modelShader);
+		
+
+		
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);		;
+		
+		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+		
+
+		//--- Create wall model
+		modelShader.Use();
+		modelLocation = mat4(1.0f);
+		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
 		modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
 		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
 		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
 		modelShader.setMat4("model", modelLocation);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+
 		
+
+
 		
-		wallModel.Draw(modelShader);
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["wallTexture"]);		
+		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
@@ -1190,11 +1311,11 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 	size_t indicesDataSize = indicesCount * sizeof(unsigned int);
 	CreateObject("Procedural Terrain", terrainVertices, terrainVerticesCount, &terrainIndices[0][0], indicesCount, terrainSectionSizes, terrainAttributeSize);
 
-	
+
 }
 
 void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]) {
-	
+
 
 	//Fill vertices array
 	//Access with latitude then longitude, starts top left, moves around then down and around again
@@ -1206,7 +1327,7 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 		{
 			float theta = 2.0f * PI * lon / longitudeSteps;
 			float phi = PI * lat / (latitudeSteps - 1);
-			
+
 			//Performs the formulas described above
 			float x = sphereRadius * sin(phi) * cos(theta);
 			float y = sphereRadius * cos(phi);
@@ -1225,8 +1346,8 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereVertices[lat][lon][1] = y;
 			sphereVertices[lat][lon][2] = z;
 
-			sphereVertices[lat][lon][3] = (float)lon / (longitudeSteps - 1); 
-			sphereVertices[lat][lon][4] = (float)lat / (latitudeSteps - 1); 
+			sphereVertices[lat][lon][3] = (float)lon / (longitudeSteps - 1);
+			sphereVertices[lat][lon][4] = (float)lat / (latitudeSteps - 1);
 
 			sphereVertices[lat][lon][5] = 0.0f;
 			sphereVertices[lat][lon][6] = 0.75f;
@@ -1251,18 +1372,18 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			//For instance, 2 * longitudeSteps + 3 would be sphereVertices[2][3]
 			//In this case, lat + 1 moves it down 1
 
-			
+
 			int topLeft = lat * longitudeSteps + lon;          // Top-left vertex
 			int bottomLeft = (lat + 1) * longitudeSteps + lon; // Bottom-left vertex
 			int topRight = lat * longitudeSteps + (lon + 1);   // Top-right vertex
 			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1); // Bottom-right vertex
 
-			
-			sphereIndices[i] = topLeft; 
-			sphereIndices[i + 1] = bottomRight;
-			sphereIndices[i + 2] = topRight; 
 
-			
+			sphereIndices[i] = topLeft;
+			sphereIndices[i + 1] = bottomRight;
+			sphereIndices[i + 2] = topRight;
+
+
 			sphereIndices[i + 3] = bottomRight;
 			sphereIndices[i + 4] = bottomLeft;
 			sphereIndices[i + 5] = topLeft;

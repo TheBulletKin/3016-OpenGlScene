@@ -16,21 +16,21 @@ using namespace glm;
 class Model
 {
 public:
-    Model(string path)
+    Model(string path, unsigned int baseTextureUnit)
     {
-        loadModel(path);
+        loadModel(path, baseTextureUnit);
     }
-    void Draw(Shader& shader);
+    void Draw(Shader& shader, unsigned int baseTextureUnit);
 private:
     // model data
     vector<Mesh> meshes;
     string directory;
 
-    void loadModel(string path);
-    void processNode(aiNode* node, const aiScene* scene);
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+    void loadModel(string path, unsigned int baseTextureUnit);
+    void processNode(aiNode* node, const aiScene* scene, unsigned int baseTextureUnit);
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene, unsigned int baseTextureUnit);
     vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
-        string typeName);
+        string typeName, unsigned int baseTextureUnit);
     vector<Texture> textures_loaded;
 };
 
