@@ -527,7 +527,7 @@ int main()
 	sphereNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	sphereNoiseGenerator.SetFrequency(0.08f);
 
-	float noiseScale = 0.25f;
+	float noiseScale = 0.2f;
 
 	for (int y = 0; y < noiseHeight; ++y) {
 		for (int x = 0; x < noiseWidth; ++x) {
@@ -1379,8 +1379,12 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereVertices[lat][lon][1] = y;
 			sphereVertices[lat][lon][2] = z;
 
-			sphereVertices[lat][lon][3] = (float)lon / (longitudeSteps - 1);
-			sphereVertices[lat][lon][4] = (float)lat / (latitudeSteps - 1);
+			float u = (float)lon / (longitudeSteps - 1);
+			float v = (float)lat / (latitudeSteps - 1);
+			v = (cos(phi) + 1.0f) / 2.0f;
+
+			sphereVertices[lat][lon][3] = u;
+			sphereVertices[lat][lon][4] = v;
 
 			sphereVertices[lat][lon][5] = 0.0f;
 			sphereVertices[lat][lon][6] = 0.75f;
