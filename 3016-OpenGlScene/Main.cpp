@@ -474,10 +474,10 @@ int main()
 	};
 
 	vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.0f,  3.0f),
-		glm::vec3(12.3f, 0.0f, -4.0f),
-		glm::vec3(-4.0f,  0.0f, -12.0f),
-		glm::vec3(6.0f,  0.0f, -3.0f)
+		glm::vec3(0.7f,  0.5f,  3.0f),
+		glm::vec3(12.3f, 0.5f, -4.0f),
+		glm::vec3(-4.0f,  0.5f, -12.0f),
+		glm::vec3(6.0f,  0.5f, -3.0f)
 	};
 
 	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
@@ -674,7 +674,7 @@ int main()
 
 		//-----------------------------------
 		// Multiple lights
-		lightNoiseTextureCurrentIndex = (int)(currentFrame * 0.1f * lightNoiseTextureLength) % lightNoiseTextureLength;
+		lightNoiseTextureCurrentIndex = (int)(currentFrame * 0.035f * lightNoiseTextureLength) % lightNoiseTextureLength;
 		float noiseValue = lightNoiseValues[lightNoiseTextureCurrentIndex];
 
 
@@ -700,32 +700,32 @@ int main()
 		
 		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
 		TexturedObjectShader.setVec3("pointLights[0].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[0].diffuse", vec3(0.0f));
-		TexturedObjectShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[0].specular", lightColour.x, lightColour.y, lightColour.z);
 		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
 		// point light 2
 		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
 		TexturedObjectShader.setVec3("pointLights[1].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[1].diffuse", vec3(0.0f));
-		TexturedObjectShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("pointLights[1].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[1].specular", lightColour.x, lightColour.y, lightColour.z);
 		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
 		// point light 3
 		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
 		TexturedObjectShader.setVec3("pointLights[2].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[2].diffuse", vec3(0.0f));
-		TexturedObjectShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("pointLights[2].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[2].specular", lightColour.x, lightColour.y, lightColour.z);
 		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
 		// point light 4
 		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
 		TexturedObjectShader.setVec3("pointLights[3].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[3].diffuse", vec3(0.0f));
-		TexturedObjectShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("pointLights[3].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[3].specular", lightColour.x, lightColour.y, lightColour.z);
 		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[3].quadratic", 0.032f);
@@ -808,7 +808,7 @@ int main()
 		TexturedObjectShader.Use();
 		mat4 model = mat4(1.0f);
 		model = translate(model, vec3(0.0f, 0.0f, -20.0f));
-		model = scale(model, vec3(90.0f, 0.0f, 50.0f));
+		model = scale(model, vec3(90.0f, 1.0f, 50.0f));
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 		
 
@@ -826,8 +826,8 @@ int main()
 		for (vec3 lampPos : pointLightPositions)
 		{
 			mat4 lampTransform = mat4(1.0f);
-			lampTransform = translate(lampTransform, lampPos);
-			lampTransform = scale(lampTransform, vec3(0.4f, 0.4f, 0.4f));
+			lampTransform = translate(lampTransform, vec3(lampPos.x, lampPos.y - 0.5f, lampPos.z));
+			lampTransform = scale(lampTransform, vec3(0.2f, 0.2f, 0.2f));
 			modelShader.Use();
 
 			modelShader.setMat4("model", lampTransform);
@@ -1053,7 +1053,7 @@ int main()
 		
 
 		
-		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);	
+			
 		
 		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
 		
@@ -1073,7 +1073,7 @@ int main()
 
 
 		
-		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["wallTexture"]);		
+				
 		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
 
 		//--- Swap buffers to render to screen, poll IO events
