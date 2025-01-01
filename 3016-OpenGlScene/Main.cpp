@@ -154,6 +154,7 @@ int main()
 	//--- Enable depth buffer
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
@@ -549,26 +550,55 @@ int main()
 		}
 	}
 
-	unsigned int noiseTexture;
-	glGenTextures(1, &noiseTexture);
+	unsigned int firstNoiseTexture;
+	glGenTextures(1, &firstNoiseTexture);
 
-	texNameToId["noiseTexture"] = noiseTexture;
-	texNameToUnitNo["noiseTexture"] = 1;
+	texNameToId["firstNoiseTexture"] = firstNoiseTexture;
+	texNameToUnitNo["firstNoiseTexture"] = 1;
 
-	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
-	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["firstNoiseTexture"]);
+	glBindTexture(GL_TEXTURE_2D, firstNoiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+
+	
+
+	sphereShader.setInt("firstNoiseTexture", texNameToUnitNo["firstNoiseTexture"]);
+
+	sphereNoiseGenerator.SetFrequency(0.01f);
+
+	noiseScale = 0.35f;
+
+	for (int y = 0; y < noiseHeight; ++y) {
+		for (int x = 0; x < noiseWidth; ++x) {
+			int index = y * noiseWidth + x;
+
+			float scaledX = (float)x * noiseScale;
+			float scaledY = (float)y * noiseScale;
+
+
+			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;
+		}
+	}
+
+	unsigned int secondNoiseTexture;
+	glGenTextures(1, &secondNoiseTexture);
+
+	texNameToId["secondNoiseTexture"] = secondNoiseTexture;
+	texNameToUnitNo["secondNoiseTexture"] = 5;
+
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["secondNoiseTexture"]);
+	glBindTexture(GL_TEXTURE_2D, secondNoiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	
-	
-
-	
-
-	sphereShader.setInt("noiseTexture", texNameToUnitNo["noiseTexture"]);
+	sphereShader.setInt("secondNoiseTexture", texNameToUnitNo["secondNoiseTexture"]);
 
 
 	// ----------------------------------
@@ -626,7 +656,10 @@ int main()
 		float rotationMin = 0.0f;
 		float rotationAmount = rotationMin + (359.0f - rotationMin) * dis(gen);
 		randomTreeRotations.push_back(rotationAmount);
+		modelShader
 	}
+
+
 
 	
 	// NOTE:
@@ -650,7 +683,8 @@ int main()
 
 		//--------------------------------------
 		// Clear screen and set it to the random colour
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		vec3 backgroundColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
+		glClearColor(backgroundColour.x, backgroundColour.y, backgroundColour.z, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		
@@ -794,7 +828,8 @@ int main()
 			
 			modelShader.setMat4("model", model);
 			modelShader.setMat4("projection", projection);
-			modelShader.setMat4("view", view);			
+			modelShader.setMat4("view", view);	
+			modelShader.setBool("useInstancing", true);
 
 			treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
 			//sceneObjectDictionary["Cube Object"]->DrawMesh();
@@ -811,7 +846,7 @@ int main()
 		model = scale(model, vec3(90.0f, 1.0f, 50.0f));
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 		
-
+		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 		TexturedObjectShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
@@ -833,6 +868,7 @@ int main()
 			modelShader.setMat4("model", lampTransform);
 			modelShader.setMat4("projection", projection);
 			modelShader.setMat4("view", view);
+			modelShader.setBool("useInstancing", true);
 			
 			lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
 			
@@ -1050,6 +1086,7 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", true);
 		
 
 		
@@ -1068,6 +1105,7 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", true);
 
 		
 

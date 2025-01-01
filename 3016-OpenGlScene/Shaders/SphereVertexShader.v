@@ -9,7 +9,8 @@ out vec3 colourFrag;
 out vec3 Normal;
 out vec3 FragPos;
 
-uniform sampler2D noiseTexture; 
+uniform sampler2D firstNoiseTexture;
+uniform sampler2D secondNoiseTexture; 
 uniform float time; 
 uniform float displacementScale; 
 
@@ -21,14 +22,20 @@ uniform bool flatShading;
 
 void main(){
 	vec2 animatedUV = texCoord + vec2(time * 0.1, 0.0);
-	float noiseValue = texture(noiseTexture, animatedUV).r;
+	
+	float primaryNoiseValue = texture(firstNoiseTexture, animatedUV).r;
+    float secondaryNoiseValue = texture(secondNoiseTexture, animatedUV * 1.5).r;
 
-	vec3 displacedPosition = aPos + normalize(aPos) * noiseValue * displacementScale;
+	float combinedNoise = mix(primaryNoiseValue, secondaryNoiseValue, 0.5); // Weighted blend
 
+	vec3 displacedPosition = aPos + normalize(aPos) * combinedNoise * displacementScale;
+	//vec3 displacedPosition = aPos + normalize(aPos) * secondaryNoiseValue * displacementScale;
+	
 	FragPos = vec3(model * vec4(displacedPosition, 1.0));
 
 	gl_Position = projection * view * model * vec4(displacedPosition, 1.0);
 
+	
 	colourFrag = colour;
 
 	if (flatShading) {
