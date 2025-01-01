@@ -34,7 +34,7 @@ void Mesh::setupMesh(unsigned int baseTextureUnit)
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 
-    //TEMP TEXTUER ASSIGNING
+    
     glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
     glBindTexture(GL_TEXTURE_2D, textures[0].id);
 

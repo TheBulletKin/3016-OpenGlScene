@@ -85,6 +85,11 @@ const int sphereIndicesCount = (longitudeSteps - 1) * (latitudeSteps - 1) * 6;
 map<string, unsigned int> texNameToId;
 map<string, unsigned int> texNameToUnitNo;
 
+//-- For random number generation
+random_device rd; //Seed generation
+mt19937 gen(rd()); //Random value generator using the this mt19937 method. Creates large integers
+uniform_real_distribution<> dis(0.0, 1.0);
+
 //TODO
 /* Each model needs to hold its texture id when it is created, used when it renders. Don't hold that on here.
 * By holding the generated texture IDs I don't need to worry about the order.
@@ -579,19 +584,41 @@ int main()
 	Model wallModel("Media/Wall/Wall.fbx", texNameToUnitNo["wallTexture"]);
 	
 
-	vec3 treePositions[] = {
-		vec3(0.0f,  0.0f,  0.0f),
-		vec3(2.0f,  0.0f, -15.0f),
-		vec3(-1.5f, 0.0f, -2.5f),
-		vec3(-3.8f, 0.0f, -12.3f),
-		vec3(2.4f, 0.0f, -3.5f),
-		vec3(-1.7f,  0.0f, -7.5f),
-		vec3(1.3f, 0.0f, -2.5f),
-		vec3(1.5f,  0.0f, -2.5f),
-		vec3(1.5f,  0.0f, -1.5f),
-		vec3(-1.3f,  0.0f, -1.5f)
-	};
+	
+	vector<vec3> randomTreePositions;
+	vector<float> randomTreeRotations;
+	//top left must be smaller to work
+	Point treeSpawnTopLeft = { -40.0f, -0.1f, -40.0f }; //Left, up, forward
+	Point treeSpawnBottomRight = { 40.0f, -0.1f, -3.0f };
 
+	float minX = std::min(treeSpawnTopLeft.x, treeSpawnBottomRight.x);
+	float maxX = std::max(treeSpawnTopLeft.x, treeSpawnBottomRight.x);
+	float minZ = std::min(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
+	float maxZ = std::max(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
+
+	int numberOfTrees = 120;
+
+
+	for (size_t i = 0; i < numberOfTrees; i++)
+	{
+		
+
+		//float ySpawnValueMin = 0.8f;
+		//float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
+
+		float randomX = treeSpawnTopLeft.x + (treeSpawnBottomRight.x - treeSpawnTopLeft.x) * dis(gen);
+		float randomY = 0.0f;
+		float randomZ = treeSpawnTopLeft.z + (treeSpawnBottomRight.z - treeSpawnTopLeft.z) * dis(gen);
+
+		vec3 spawnPosition = vec3(randomX, randomY, randomZ);
+		randomTreePositions.push_back(spawnPosition);
+
+		float rotationMin = 0.0f;
+		float rotationAmount = rotationMin + (359.0f - rotationMin) * dis(gen);
+		randomTreeRotations.push_back(rotationAmount);
+	}
+
+	
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
 
@@ -723,11 +750,17 @@ int main()
 		}
 
 		//--- Render trees
-		for (unsigned int i = 0; i < 10; i++)
+		for (unsigned int i = 0; i < numberOfTrees; i++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
 			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
-			model = translate(model, treePositions[i]);
+			
+			
+
+			model = translate(model, randomTreePositions[i]);
+			model = rotate(model, radians(randomTreeRotations[i]), vec3(0.0f, 1.0f, 0.0f));
+	
+
 			
 			//TexturedObjectShader.setMat4("model", model);
 
@@ -761,8 +794,10 @@ int main()
 		//--- Render Plane
 		TexturedObjectShader.Use();
 		mat4 model = mat4(1.0f);
+		model = translate(model, vec3(0.0f, 0.0f, -20.0f));
+		model = scale(model, vec3(90.0f, 0.0f, 50.0f));
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-		model = scale(model, vec3(8.0f, 8.0f, 8.0f));
+		
 
 		TexturedObjectShader.setMat4("model", model);
 
@@ -775,10 +810,7 @@ int main()
 
 
 
-		//-- Random stuff for projectile generation
-		random_device rd; //Seed generation
-		mt19937 gen(rd()); //Random value generator using the this mt19937 method. Creates large integers
-		uniform_real_distribution<> dis(0.0, 1.0);
+		
 
 		//-- Projectile spawning
 		projectileSpawnTimer += deltaTime;
@@ -798,8 +830,9 @@ int main()
 				cerr << "OpenGL error after VBO binding: " << error << endl;
 			}
 
-			Point topLeft = { -10.0f, 0.1f, -20.0f };
-			Point bottomRight = { 10.0f, 0.1f, 0.0f };
+			Point topLeft = { -40.0f, -0.1f, -40.0f };
+			Point bottomRight = { 40.0f, -0.1f, -10.0f };
+			
 
 			float ySpawnValueMin = 0.8f;
 			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
@@ -843,7 +876,7 @@ int main()
 
 			//Random spawn cooldown
 			float cooldownMin = 2.0f;
-			projectileSpawnCooldown = cooldownMin + (8.0f - cooldownMin) * dis(gen);
+			projectileSpawnCooldown = cooldownMin + (4.0f - cooldownMin) * dis(gen);
 
 			projectileSpawnTimer = 0.0f;
 		}
@@ -1357,7 +1390,7 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereVertices[lat][lon][9] = normalY;
 			sphereVertices[lat][lon][10] = normalZ;
 
-
+			
 		}
 	}
 
@@ -1366,6 +1399,10 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 	//Fill indices array
 	int i = 0;
 	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
+		
+		
+		
+		
 		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
 
 			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
@@ -1373,11 +1410,22 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			//In this case, lat + 1 moves it down 1
 
 
-			int topLeft = lat * longitudeSteps + lon;          // Top-left vertex
-			int bottomLeft = (lat + 1) * longitudeSteps + lon; // Bottom-left vertex
-			int topRight = lat * longitudeSteps + (lon + 1);   // Top-right vertex
-			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1); // Bottom-right vertex
+			int topLeft = lat * longitudeSteps + lon; 
+			int bottomLeft = (lat + 1) * longitudeSteps + lon; 
+			int topRight = lat * longitudeSteps + (lon + 1) % longitudeSteps;
+			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1) % longitudeSteps; 
 
+			
+			
+			//When the vertical slice is the last one
+			if (lon == longitudeSteps - 2)
+			{
+				topLeft = lat * longitudeSteps + lon;
+				bottomLeft = (lat + 1) * longitudeSteps + lon;
+				topRight = lat * longitudeSteps;
+				bottomRight = (lat + 1) * longitudeSteps;
+			}
+			
 
 			sphereIndices[i] = topLeft;
 			sphereIndices[i + 1] = bottomRight;
@@ -1388,13 +1436,17 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereIndices[i + 4] = bottomLeft;
 			sphereIndices[i + 5] = topLeft;
 
-
-
+			
+			
 
 
 			i += 6;
 		}
 	}
+
+
+
+
 
 
 	int sphereAttributeSize = 11;
