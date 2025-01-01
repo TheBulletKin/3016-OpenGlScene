@@ -154,6 +154,9 @@ int main()
 	//--- Enable depth buffer
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 
 
 	// ---------------------------------------------------
@@ -204,6 +207,9 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f
 	};
 
+	
+	
+
 	//--- Duplicate cube positions
 	vec3 cubePositions[] = {
 		vec3(0.0f,  0.0f,  0.0f),
@@ -227,7 +233,7 @@ int main()
 	};
 
 	int cubeVerticesCount = sizeof(cubeVertices) / (sizeof(cubeVertices[0]) * cubeVertexSize);
-
+	//int cubeIndicesCount = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
 	CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
@@ -468,10 +474,10 @@ int main()
 	};
 
 	vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
-		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f,  2.0f, -12.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
+		glm::vec3(0.7f,  0.0f,  3.0f),
+		glm::vec3(12.3f, 0.0f, -4.0f),
+		glm::vec3(-4.0f,  0.0f, -12.0f),
+		glm::vec3(6.0f,  0.0f, -3.0f)
 	};
 
 	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
@@ -513,6 +519,8 @@ int main()
 	{
 		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
 	}
+
+	
 
 
 	// ----------------------------------
@@ -582,7 +590,9 @@ int main()
 
 	texNameToUnitNo["wallTexture"] = 3;
 	Model wallModel("Media/Wall/Wall.fbx", texNameToUnitNo["wallTexture"]);
-	
+
+	texNameToUnitNo["lampTexture"] = 4;
+	Model lampModel("Media/Lamp/lamp.obj", texNameToUnitNo["lampTexture"]);
 
 	
 	vector<vec3> randomTreePositions;
@@ -680,38 +690,41 @@ int main()
 	   by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
 	*/
 	// directional light
-		TexturedObjectShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-		TexturedObjectShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+		vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
+		vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
+		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
+		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		// point light 1
+		
 		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-		TexturedObjectShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[0].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[0].diffuse", vec3(0.0f));
 		TexturedObjectShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
 		// point light 2
 		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-		TexturedObjectShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[1].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[1].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[1].diffuse", vec3(0.0f));
 		TexturedObjectShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
 		// point light 3
 		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-		TexturedObjectShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[2].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[2].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[2].diffuse", vec3(0.0f));
 		TexturedObjectShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
 		TexturedObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
 		// point light 4
 		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-		TexturedObjectShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-		TexturedObjectShader.setVec3("pointLights[3].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[3].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[3].diffuse", vec3(0.0f));
 		TexturedObjectShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
 		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
@@ -719,7 +732,7 @@ int main()
 		// spotLight
 		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
 		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
-		TexturedObjectShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		TexturedObjectShader.setVec3("spotLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		TexturedObjectShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
 		TexturedObjectShader.setFloat("spotLight.constant", 1.0f);
@@ -727,7 +740,7 @@ int main()
 		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
 		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-
+		
 
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
@@ -739,7 +752,7 @@ int main()
 			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
 			TexturedObjectShader.setMat4("model", model);
 
-			TexturedObjectShader.setVec3("lightPos", lightPos);
+			//TexturedObjectShader.setVec3("lightPos", lightPos);
 			TexturedObjectShader.setVec3("viewPos", camera.Position);
 			//TexturedObjectShader.setVec3("light.position", camera.Position);
 			//TexturedObjectShader.setVec3("light.direction", camera.Front);
@@ -809,7 +822,21 @@ int main()
 		}
 
 
+		//--- Render lamps
+		for (vec3 lampPos : pointLightPositions)
+		{
+			mat4 lampTransform = mat4(1.0f);
+			lampTransform = translate(lampTransform, lampPos);
+			lampTransform = scale(lampTransform, vec3(0.4f, 0.4f, 0.4f));
+			modelShader.Use();
 
+			modelShader.setMat4("model", lampTransform);
+			modelShader.setMat4("projection", projection);
+			modelShader.setMat4("view", view);
+			
+			lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
+			
+		}
 		
 
 		//-- Projectile spawning
@@ -1026,7 +1053,7 @@ int main()
 		
 
 		
-		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);		;
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);	
 		
 		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
 		
@@ -1432,13 +1459,13 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			
 
 			sphereIndices[i] = topLeft;
-			sphereIndices[i + 1] = bottomRight;
-			sphereIndices[i + 2] = topRight;
+			sphereIndices[i + 1] = topRight;
+			sphereIndices[i + 2] = bottomLeft;
 
 
-			sphereIndices[i + 3] = bottomRight;
-			sphereIndices[i + 4] = bottomLeft;
-			sphereIndices[i + 5] = topLeft;
+			sphereIndices[i + 3] = topRight;
+			sphereIndices[i + 4] = bottomRight;
+			sphereIndices[i + 5] = bottomLeft;
 
 			
 			
