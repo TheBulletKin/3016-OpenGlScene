@@ -22,6 +22,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <irrklang/irrKlang.h>
+
 #include "FastNoiseLite.h"
 
 
@@ -36,6 +38,7 @@
 
 using namespace glm;
 using namespace std;
+using namespace irrklang;
 
 //--- Callback method definitions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -72,6 +75,7 @@ float lastFrame = 0.0f;
 map<string, CustomSceneObject*> sceneObjectDictionary;
 
 vector<ArcingProjectileObject*> projectileObjects;
+map<ArcingProjectileObject*, ISound*> bubbleSounds;
 
 //--- Sphere object constants
 const float sphereRadius = 1.2f;
@@ -159,6 +163,14 @@ int main()
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
+
+	//---- Audio
+	ISoundEngine* audioEngine = createIrrKlangDevice();
+	ISound* backgroundSound = audioEngine->play2D("Media/Audio/mysterious-ambient-suspense-atmosphere-252023.mp3", true, false, true);
+	if (backgroundSound)
+	{
+		backgroundSound->setVolume(0.04f);
+	}
 
 	// ---------------------------------------------------
 	// Base cube creation
@@ -652,7 +664,7 @@ int main()
 		float rotationAmount = rotationMin + (359.0f - rotationMin) * dis(gen);
 		randomTreeRotations.push_back(rotationAmount);
 		model = rotate(model, radians(rotationAmount), vec3(0.0f, 1.0f, 0.0f));
-		
+
 		treeModelMatrices[i] = model;
 	}
 
@@ -711,8 +723,10 @@ int main()
 		glClearColor(backgroundColour.x, backgroundColour.y, backgroundColour.z, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
+		//Audio updating
+		audioEngine->setListenerPosition(vec3df(camera.Position.x, camera.Position.y, camera.Position.z), vec3df(-camera.Front.x, -camera.Front.y, -camera.Front.z));
+		audioEngine->setRolloffFactor(2.0f);
+	
 		//---------------------------------------
 		// Activate shader
 		TexturedObjectShader.Use();
@@ -819,7 +833,7 @@ int main()
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
-		
+
 
 
 		//--- Render Plane
@@ -919,6 +933,21 @@ int main()
 			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame, gravityMultiplier, movespeedMultiplier);
 
 			projectileObjects.push_back(newProjectileObject);
+			ISound* sound = audioEngine->play3D("Media/Audio/bathtub-ambience-27873.mp3", vec3df(spawnPosition.x, spawnPosition.y, spawnPosition.z), true, false, true);
+			if (!sound) {
+				std::cerr << "Failed to load sound file for bubble" << std::endl;
+				
+			}
+			else {
+				sound->setVolume(2.5f);
+				
+				sound->setMinDistance(5.0f);
+				
+				
+				bubbleSounds[newProjectileObject] = sound;
+			}
+
+
 
 			//Random spawn cooldown
 			float cooldownMin = 2.0f;
@@ -934,6 +963,9 @@ int main()
 				projectileObject->UpdatePosition(deltaTime);
 
 				if (projectileObject->ShouldDestroy()) {
+
+					bubbleSounds[projectileObject]->drop();
+					bubbleSounds.erase(projectileObject);
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
 
@@ -970,7 +1002,7 @@ int main()
 
 
 
-					
+
 
 
 
@@ -979,6 +1011,7 @@ int main()
 
 
 					projectileObject->DrawMesh();
+					bubbleSounds[projectileObject]->setPosition(vec3df(projectileObject->currentPosition.x, projectileObject->currentPosition.y, projectileObject->currentPosition.z));
 
 					GLenum error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1073,7 +1106,7 @@ int main()
 
 		glBindVertexArray(treeModel.meshes[0].VAO);
 
-		GLuint currentTexture;		
+		GLuint currentTexture;
 		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
 		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
 		modelShader.setInt(("texture_diffuse1"), texNameToUnitNo["treeTexture"]);
@@ -1082,7 +1115,7 @@ int main()
 		//lamp is unit 4 id 6		
 		glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
 		glBindVertexArray(0);
-		
+
 
 
 		//Render single tree for testing
@@ -1141,7 +1174,7 @@ int main()
 				cerr << "OpenGL error post tree render: " << error << endl;
 			}
 		}*/
-		
+
 
 		//--- Create wall model
 		modelShader.Use();
@@ -1155,10 +1188,10 @@ int main()
 		modelShader.setMat4("view", view);
 		modelShader.setBool("useInstancing", false);
 
-		
+
 		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
-		
-		
+
+
 
 
 
@@ -1182,11 +1215,16 @@ int main()
 
 	for (ArcingProjectileObject* projectile : projectileObjects)
 	{
+		bubbleSounds[projectile]->drop();
+		bubbleSounds.erase(projectile);
+
 		projectile->CleanUp();
 	}
 
 	sceneObjectDictionary.clear();
 	projectileObjects.clear();
+
+	audioEngine->drop();
 
 
 	glfwTerminate();
