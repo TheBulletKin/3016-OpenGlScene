@@ -208,8 +208,8 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f
 	};
 
-	
-	
+
+
 
 	//--- Duplicate cube positions
 	vec3 cubePositions[] = {
@@ -287,8 +287,8 @@ int main()
 	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
 	TexturedObjectShader.Use();
 	//The texture sampler on the fragment shader is given value '0' now, means later on in the render loop it will use texture unit zero
-	
-	
+
+
 	//TexturedObjectShader.setInt("texture1", texturePos);
 	TexturedObjectShader.setBool("useTexture", false);
 	TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
@@ -322,8 +322,8 @@ int main()
 		// Texture assigning
 		// Set one of the texture units to the texture created, to use all textures in one draw call
 		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
-	
-	
+
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, containerTextureId); //Like last time, future operations will affect this texture
 	//Texture 0 holds the container texture
@@ -417,7 +417,7 @@ int main()
 	sphereShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
-	
+
 
 
 	// ----------------------------------------
@@ -521,7 +521,7 @@ int main()
 		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
 	}
 
-	
+
 
 
 	// ----------------------------------
@@ -562,9 +562,9 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	
+
 
 	sphereShader.setInt("firstNoiseTexture", texNameToUnitNo["firstNoiseTexture"]);
 
@@ -608,15 +608,9 @@ int main()
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
 	texNameToUnitNo["treeTexture"] = 2;
-	
-	Model treeModel("Media/Tree/Tree.obj", texNameToUnitNo["treeTexture"]);
-	
 
-	//texturesList.push_back("lampTexture");
-	//it = find(texturesList.begin(), texturesList.end(), "lampTexture");
-	//texturePos = it - texturesList.begin();
-	//Model lampModel("Media/Lamp/lamp.obj", texturePos);
-	
+	Model treeModel("Media/Tree/Tree.obj", texNameToUnitNo["treeTexture"]);
+
 
 	texNameToUnitNo["wallTexture"] = 3;
 	Model wallModel("Media/Wall/Wall.fbx", texNameToUnitNo["wallTexture"]);
@@ -624,7 +618,7 @@ int main()
 	texNameToUnitNo["lampTexture"] = 4;
 	Model lampModel("Media/Lamp/lamp.obj", texNameToUnitNo["lampTexture"]);
 
-	
+
 	vector<vec3> randomTreePositions;
 	vector<float> randomTreeRotations;
 	//top left must be smaller to work
@@ -636,32 +630,62 @@ int main()
 	float minZ = std::min(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
 	float maxZ = std::max(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
 
-	int numberOfTrees = 120;
+	int numberOfTrees = 80;
 
 
-	for (size_t i = 0; i < numberOfTrees; i++)
+	//Pre compute the instanced matrices on the cpu
+	mat4* treeModelMatrices;
+	treeModelMatrices = new mat4[numberOfTrees];
+	for (int i = 0; i < numberOfTrees; i++)
 	{
-		
-
-		//float ySpawnValueMin = 0.8f;
-		//float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
-
+		mat4 model = mat4(1.0);
 		float randomX = treeSpawnTopLeft.x + (treeSpawnBottomRight.x - treeSpawnTopLeft.x) * dis(gen);
 		float randomY = 0.0f;
 		float randomZ = treeSpawnTopLeft.z + (treeSpawnBottomRight.z - treeSpawnTopLeft.z) * dis(gen);
 
+
 		vec3 spawnPosition = vec3(randomX, randomY, randomZ);
 		randomTreePositions.push_back(spawnPosition);
+		model = translate(model, spawnPosition);
 
 		float rotationMin = 0.0f;
 		float rotationAmount = rotationMin + (359.0f - rotationMin) * dis(gen);
 		randomTreeRotations.push_back(rotationAmount);
-		modelShader
+		model = rotate(model, radians(rotationAmount), vec3(0.0f, 1.0f, 0.0f));
+		
+		treeModelMatrices[i] = model;
+	}
+
+	unsigned int instanceBuffer;
+	glGenBuffers(1, &instanceBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numberOfTrees * sizeof(mat4), &treeModelMatrices[0], GL_STATIC_DRAW);
+
+	unsigned int treeVAO = treeModel.meshes[0].VAO;
+	glBindVertexArray(treeVAO);
+	// set attribute pointers for matrix (4 times vec4)
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
+
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisor(6, 1);
+
+	glBindVertexArray(0);
+
+	GLenum error;
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
 	}
 
 
-
-	
 	// NOTE:
 	// sphere noise texture bound to texture unit 1
 
@@ -687,7 +711,7 @@ int main()
 		glClearColor(backgroundColour.x, backgroundColour.y, backgroundColour.z, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		
+
 
 		//---------------------------------------
 		// Activate shader
@@ -731,7 +755,7 @@ int main()
 		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		// point light 1
-		
+
 		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
 		TexturedObjectShader.setVec3("pointLights[0].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
@@ -774,7 +798,7 @@ int main()
 		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
 		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-		
+
 
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
@@ -795,49 +819,8 @@ int main()
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
+		
 
-		//--- Render trees
-		for (unsigned int i = 0; i < numberOfTrees; i++)
-		{
-			// calculate the model matrix for each object and pass it to shader before drawing
-			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
-			
-			
-
-			model = translate(model, randomTreePositions[i]);
-			model = rotate(model, radians(randomTreeRotations[i]), vec3(0.0f, 1.0f, 0.0f));
-	
-
-			
-			//TexturedObjectShader.setMat4("model", model);
-
-			//TexturedObjectShader.setVec3("lightPos", lightPos);
-			//TexturedObjectShader.setVec3("viewPos", camera.Position);
-			//TexturedObjectShader.setVec3("light.position", camera.Position);
-			//TexturedObjectShader.setVec3("light.direction", camera.Front);
-			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-			//modelShader.setMat4("model", model);
-			//modelShader.setMat4("projection", projection);
-			//modelShader.setMat4("view", view);
-			//treeModel.Draw(modelShader);
-
-
-			modelShader.Use();			
-			
-			modelShader.setMat4("model", model);
-			modelShader.setMat4("projection", projection);
-			modelShader.setMat4("view", view);	
-			modelShader.setBool("useInstancing", true);
-
-			treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
-			//sceneObjectDictionary["Cube Object"]->DrawMesh();
-			GLenum error;
-			while ((error = glGetError()) != GL_NO_ERROR) {
-				cerr << "OpenGL error post tree render: " << error << endl;
-			}
-		}
 
 		//--- Render Plane
 		TexturedObjectShader.Use();
@@ -845,7 +828,7 @@ int main()
 		model = translate(model, vec3(0.0f, 0.0f, -20.0f));
 		model = scale(model, vec3(90.0f, 1.0f, 50.0f));
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-		
+
 		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 		TexturedObjectShader.setMat4("model", model);
 
@@ -868,12 +851,12 @@ int main()
 			modelShader.setMat4("model", lampTransform);
 			modelShader.setMat4("projection", projection);
 			modelShader.setMat4("view", view);
-			modelShader.setBool("useInstancing", true);
-			
+
+
 			lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
-			
+
 		}
-		
+
 
 		//-- Projectile spawning
 		projectileSpawnTimer += deltaTime;
@@ -895,7 +878,7 @@ int main()
 
 			Point topLeft = { -40.0f, -0.1f, -40.0f };
 			Point bottomRight = { 40.0f, -0.1f, -10.0f };
-			
+
 
 			float ySpawnValueMin = 0.8f;
 			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
@@ -984,17 +967,17 @@ int main()
 					//Texture 1 for sphere noise texture
 
 
+
+
+
 					
 
 
-					glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
-					
-					
 
 					sphereShader.setVec3("lightPos", lightPos);
 					sphereShader.setVec3("viewPos", camera.Position);
 
-					
+
 					projectileObject->DrawMesh();
 
 					GLenum error;
@@ -1046,10 +1029,10 @@ int main()
 		sphereShader.setFloat("time", currentFrame);
 		sphereShader.setFloat("displacementScale", 0.4f);
 
-		
-		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["noiseTexture"]);
-		
-		glBindTexture(GL_TEXTURE_2D, texNameToId["noiseTexture"]);
+
+
+
+
 
 
 		sphereShader.setVec3("lightPos", lightPos);
@@ -1078,21 +1061,86 @@ int main()
 		}
 
 		// ---------------------
-		// Imported models
-		// Doesn't work without custom shader
+		// Instanced tree rendering
+
+		modelShader.Use();
+
+		mat4 treeModelBase = mat4(1.0f);
+		modelShader.setMat4("model", treeModelBase);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", true);
+
+		glBindVertexArray(treeModel.meshes[0].VAO);
+
+		GLuint currentTexture;		
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
+		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
+		modelShader.setInt(("texture_diffuse1"), texNameToUnitNo["treeTexture"]);
+		//unit 2 id 4
+		//wall is unit 3 id 5
+		//lamp is unit 4 id 6		
+		glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
+		glBindVertexArray(0);
+		
+
+
+		//Render single tree for testing
 		modelShader.Use();
 		mat4 modelLocation = mat4(1.0f);
 		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		modelShader.setBool("useInstancing", true);
-		
+		modelShader.setBool("useInstancing", false);
 
-		
-			
-		
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+
+		// old tree rendering
+		//--- Render trees
+		/*
+		for (unsigned int i = 0; i < numberOfTrees; i++)
+		{
+			// calculate the model matrix for each object and pass it to shader before drawing
+			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
+
+
+
+			model = translate(model, randomTreePositions[i]);
+			model = rotate(model, radians(randomTreeRotations[i]), vec3(0.0f, 1.0f, 0.0f));
+
+
+
+			//TexturedObjectShader.setMat4("model", model);
+
+			//TexturedObjectShader.setVec3("lightPos", lightPos);
+			//TexturedObjectShader.setVec3("viewPos", camera.Position);
+			//TexturedObjectShader.setVec3("light.position", camera.Position);
+			//TexturedObjectShader.setVec3("light.direction", camera.Front);
+			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+
+			//modelShader.setMat4("model", model);
+			//modelShader.setMat4("projection", projection);
+			//modelShader.setMat4("view", view);
+			//treeModel.Draw(modelShader);
+
+
+			modelShader.Use();
+
+			modelShader.setMat4("model", model);
+			modelShader.setMat4("projection", projection);
+			modelShader.setMat4("view", view);
+			modelShader.setBool("useInstancing", false);
+
+			//treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+			//sceneObjectDictionary["Cube Object"]->DrawMesh();
+			GLenum error;
+			while ((error = glGetError()) != GL_NO_ERROR) {
+				cerr << "OpenGL error post tree render: " << error << endl;
+			}
+		}*/
 		
 
 		//--- Create wall model
@@ -1105,14 +1153,18 @@ int main()
 		modelShader.setMat4("model", modelLocation);
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
-		modelShader.setBool("useInstancing", true);
+		modelShader.setBool("useInstancing", false);
 
 		
-
-
-		
-				
 		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
+		
+		
+
+
+
+
+
+
 
 		//--- Swap buffers to render to screen, poll IO events
 		glfwSwapBuffers(window);
@@ -1459,7 +1511,7 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereVertices[lat][lon][9] = normalY;
 			sphereVertices[lat][lon][10] = normalZ;
 
-			
+
 		}
 	}
 
@@ -1468,10 +1520,10 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 	//Fill indices array
 	int i = 0;
 	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
-		
-		
-		
-		
+
+
+
+
 		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
 
 			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
@@ -1479,13 +1531,13 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			//In this case, lat + 1 moves it down 1
 
 
-			int topLeft = lat * longitudeSteps + lon; 
-			int bottomLeft = (lat + 1) * longitudeSteps + lon; 
+			int topLeft = lat * longitudeSteps + lon;
+			int bottomLeft = (lat + 1) * longitudeSteps + lon;
 			int topRight = lat * longitudeSteps + (lon + 1) % longitudeSteps;
-			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1) % longitudeSteps; 
+			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1) % longitudeSteps;
 
-			
-			
+
+
 			//When the vertical slice is the last one
 			if (lon == longitudeSteps - 2)
 			{
@@ -1494,7 +1546,7 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 				topRight = lat * longitudeSteps;
 				bottomRight = (lat + 1) * longitudeSteps;
 			}
-			
+
 
 			sphereIndices[i] = topLeft;
 			sphereIndices[i + 1] = topRight;
@@ -1505,8 +1557,8 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereIndices[i + 4] = bottomRight;
 			sphereIndices[i + 5] = bottomLeft;
 
-			
-			
+
+
 
 
 			i += 6;
