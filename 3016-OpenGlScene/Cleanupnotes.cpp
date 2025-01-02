@@ -168,5 +168,7 @@
 *	Sort out the layout then look at how I set up these in the object creation method. Look at a way to define the attributes better so I can avoid assigning unecessary ones and make it know which to use
 	Define a point light object on CPU side with a struct in the shader that matches
 	Improve point light value assigning for textured objects using this new collection
+	Now improve how the shader applies the point lights. Do it where it is now then consider potential cleaner alternatives
+
 
 */
