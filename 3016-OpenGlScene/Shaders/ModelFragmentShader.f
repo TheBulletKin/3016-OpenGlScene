@@ -34,8 +34,6 @@ in VS_OUT {
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec3 attNormal;
-    vec3 lightPos;
-    vec3 viewPos;
 } fs_in;
 
 uniform bool hasNormals;

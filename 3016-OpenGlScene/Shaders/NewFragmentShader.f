@@ -65,12 +65,25 @@ struct SpotLight {
 
 uniform SpotLight spotLight;
  
+in VS_OUT {
+    vec3 FragPos;
+	vec2 TexCoord;
+	vec3 Normal;
+	vec3 ColourFrag;
+	vec3 TangentLightPos;
+    vec3 TangentViewPos;
+    vec3 TangentFragPos;
+}
 
-in vec2 TexCoord;
-in vec3 Normal;
-in vec3 FragPos;
+//bools
+uniform bool useVertexColours;
+uniform bool useTexCoords;
+uniform bool useInstancing;
+uniform bool useNormalMap;
 
-uniform sampler2D texture1;
+//Texture samplers (assign correct texture unit on cpu)
+uniform sampler2D texture_diffuse0;
+uniform sampler2D texture_normal0;
 
 
 uniform vec3 lightColor;
