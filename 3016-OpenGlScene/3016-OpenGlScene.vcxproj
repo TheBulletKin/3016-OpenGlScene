@@ -153,6 +153,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureLoader.h" />
+    <ClInclude Include="VertAttributeHolder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\FragmentShader.f" />

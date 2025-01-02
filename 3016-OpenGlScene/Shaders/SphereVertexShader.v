@@ -1,9 +1,9 @@
 #version 330 core
 //Following's location value will be used by the vertex attribute pointer
 layout (location = 0) in vec3 aPos;
-layout(location = 1) in vec2 texCoord;
-layout(location = 2) in vec3 colour;
-layout (location = 3) in vec3 aNormal;
+layout(location = 2) in vec2 texCoord;
+layout(location = 3) in vec3 colour;
+layout (location = 1) in vec3 aNormal;
 
 out vec3 colourFrag;
 out vec3 Normal;

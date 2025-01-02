@@ -4,8 +4,9 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include "Shader.h"
+
+#include "VertAttributeHolder.h"
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -22,7 +23,7 @@ public:
 	void PrepareAndBindVBO(unsigned int VBO, int verticesCount);
 	void PrepareAndBindEBO(unsigned int indices[], size_t indicesDataSize, int indicesCount);	
 	void PrepareAndBindEBO(unsigned int VBO, int indicesCount);
-	void PrepareVertexAttributeArrays(std::vector<int>& sectionSizes, int vertexAttributeCount);
+	void PrepareVertexAttributeArrays(std::vector<VertAttribute> attributes, int vertexAttributeCount);
 	void DrawMesh();
 	unsigned int GetVAOID();
 	unsigned int GetVBOID();

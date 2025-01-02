@@ -1,6 +1,7 @@
 #include "CustomSceneObject.h"
 #include "stb_image.h"
 #include <iostream>
+#include "VertAttributeHolder.h"
 
 using namespace std;
 
@@ -73,12 +74,15 @@ void CustomSceneObject::PrepareAndBindEBO(unsigned int VBO, int indicesCount) {
 /// </summary>
 /// <param name="sectionSizes">A vector where each int is the size of one attribute of a vertex. Eg, {3, 2} could mean 3 floats for position and 2 floats for texcoords</param>
 /// <param name="vertexAttributeCount">total number of floats per vertex</param>
-void CustomSceneObject::PrepareVertexAttributeArrays(vector<int>& sectionSizes, int vertexAttributeCount)
+void CustomSceneObject::PrepareVertexAttributeArrays(vector<VertAttribute> attributes, int vertexAttributeCount)
 {
 	size_t stride = vertexAttributeCount * sizeof(float);
 	size_t offset = 0;
-	for (size_t i = 0; i < sectionSizes.size(); ++i) {
-		int sectionSize = sectionSizes[i];
+	for (size_t i = 0; i < attributes.size(); ++i) {
+		VertAttribute vertAttribute = attributes[i];
+
+		int startPos = static_cast<int>(vertAttribute.type);
+		
 
 
 		// Will tell OpenGL how to interpret the vertex buffer data.
@@ -91,10 +95,10 @@ void CustomSceneObject::PrepareVertexAttributeArrays(vector<int>& sectionSizes, 
 		// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
 		// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
 
-		glVertexAttribPointer(i, sectionSize, GL_FLOAT, GL_FALSE, stride, (void*)(offset));
-		glEnableVertexAttribArray(i);
+		glVertexAttribPointer(startPos, vertAttribute.length, GL_FLOAT, GL_FALSE, stride, (void*)(offset));
+		glEnableVertexAttribArray(startPos);
 
-		offset += sectionSize * sizeof(float);
+		offset += vertAttribute.length * sizeof(float);
 	}
 
 	glBindVertexArray(0);

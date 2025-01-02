@@ -21,11 +21,11 @@ uniform mat4 projection;
 uniform bool useInstancing; 
 
 
+
 void main()
 {
     vs_out.FragPos = vec3(model * vec4(aPos, 1.0)); 
-    vs_out.TexCoords = aTexCoords; 
-    vs_out.viewPos = viewPos;
+    vs_out.TexCoords = aTexCoords;     
     mat3 normalMatrix = transpose(inverse(mat3(model)));
     //Normal = mat3(transpose(inverse(model))) * aNormal;  
     vec3 T = normalize(normalMatrix * aTangent);

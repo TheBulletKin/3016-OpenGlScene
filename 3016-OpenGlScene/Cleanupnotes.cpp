@@ -169,6 +169,15 @@
 	Define a point light object on CPU side with a struct in the shader that matches
 	Improve point light value assigning for textured objects using this new collection
 	Now improve how the shader applies the point lights. Do it where it is now then consider potential cleaner alternatives
+	Set the cubes to use the new shader for the time being to test things
+	Set all values before rendering the cubes to start with
+	work on the fragment shader now, combining the ones for cubes, models and base.
+	Get this new shader working with the cubes. Figure out what i'm missing from other shaders and smush it all into one 
+	Cubes aren't rendering now because the vertex data isn't right
+	
 
-
-*/
+	Plane only has position and tex coords, no normal inbetween. This is where I need to add a way to control that.
+	Add a new attribute struct
+		Length
+		Type
+	*/
