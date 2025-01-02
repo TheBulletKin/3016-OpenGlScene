@@ -13,16 +13,11 @@ out VS_OUT {
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec3 attNormal;
-    vec3 lightPos;
-    vec3 viewPos;
 } vs_out;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform vec3 lightPos;
-uniform vec3 viewPos;
-
 uniform bool useInstancing; 
 
 
@@ -32,6 +27,7 @@ void main()
     vs_out.TexCoords = aTexCoords; 
     vs_out.viewPos = viewPos;
     mat3 normalMatrix = transpose(inverse(mat3(model)));
+    //Normal = mat3(transpose(inverse(model))) * aNormal;  
     vec3 T = normalize(normalMatrix * aTangent);
     vec3 N = normalize(normalMatrix * aNormal);
     T = normalize(T - dot(T, N) * N);

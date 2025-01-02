@@ -240,7 +240,7 @@ int main()
 
 	int cubeVerticesCount = sizeof(cubeVertices) / (sizeof(cubeVertices[0]) * cubeVertexSize);
 	//int cubeIndicesCount = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
-	CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
+	//CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
 
@@ -313,8 +313,7 @@ int main()
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
 
-	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
-
+	
 	// --------------------------------------------
 	// Texture loading
 	// --------------------------------------------
@@ -323,15 +322,8 @@ int main()
 	LoadTexture(containerTextureId, "Media/container.jpg");
 
 
-	//-------------------------------------
-		// Texture assigning
-		// Set one of the texture units to the texture created, to use all textures in one draw call
-		// The uniform values Texture1 and Texture 2 are used here, as the texture units 1 and 0 are created, those shaders use those
-
-
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, containerTextureId); //Like last time, future operations will affect this texture
-	//Texture 0 holds the container texture
+	glBindTexture(GL_TEXTURE_2D, containerTextureId); 
 
 
 	texNameToId["container"] = containerTextureId;
@@ -366,6 +358,7 @@ int main()
 	// Procedural terrain generation
 	// -----------------------------------------
 	//NOTE: Need to look through this later to double check understanding
+	Shader ProceduralObjectShader("Shaders/TerrainVertexShader.v", "Shaders/TerrainFragmentShader.f");
 
 	float terrainVertices[MAP_SIZE][6];
 	int terrainVerticesCount = sizeof(terrainVertices) / sizeof(terrainVertices[0]);
@@ -426,58 +419,10 @@ int main()
 
 
 	// ----------------------------------------
-	// Light object creation
+	// Light creation
 	// ----------------------------------------
 
-	float lightCubeVertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f
-	};
-
-	int lightCubeAttributesSize = 3;
-	vector<int> lightCubeSectionSizes =
-	{
-		3, //Position
-	};
+	
 
 	vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.5f,  3.0f),
@@ -486,15 +431,10 @@ int main()
 		glm::vec3(6.0f,  0.5f, -3.0f)
 	};
 
-	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
-	CreateObject("Light Object", lightCubeVertices, lightCubeVerticesCount, NULL, 0, lightCubeSectionSizes, lightCubeAttributesSize);
-
+	
 	vec3 lightColour(1.0f, 1.0f, 1.0f);
 
-	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
-
-	lightShader.Use();
-	lightShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));
+	
 
 	vec3 lightPos(5.0f, 7.0f, -2.0f);
 	mat4 lightModel = mat4(1.0f);
@@ -508,6 +448,9 @@ int main()
 	sphereShader.setVec3("lightPos", lightPos);
 	sphereShader.setBool("flatShading", false);
 
+
+	//-------------
+	// Light colour variation texture
 	FastNoiseLite lightColourNoiseGenerator;
 	lightColourNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	lightColourNoiseGenerator.SetFrequency(0.2f);
@@ -623,6 +566,9 @@ int main()
 	texNameToUnitNo["lampTexture"] = 4;
 	Model lampModel("Media/Lamp/lamp.obj", texNameToUnitNo["lampTexture"]);
 
+	// -----------------------------------
+	// Tree position generation
+	// ----------------------------------
 
 	vector<vec3> randomTreePositions;
 	vector<float> randomTreeRotations;
@@ -704,8 +650,7 @@ int main()
 	}
 
 
-	// NOTE:
-	// sphere noise texture bound to texture unit 1
+	
 
 	// -----------------------------------
 	// Main render loop
@@ -905,7 +850,7 @@ int main()
 			Point bottomRight = { 40.0f, -0.1f, -10.0f };
 
 
-			float ySpawnValueMin = 0.8f;
+			float ySpawnValueMin = 1.5f;
 			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
 
 			float randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
@@ -986,18 +931,6 @@ int main()
 					projectileModel = translate(projectileModel, projectileObject->initialPosition + (projectileObject->currentPosition - projectileObject->initialPosition));
 
 
-					//TexturedObjectShader.setMat4("model", projectileModel);
-
-
-					//TEMP LIGHTING STUFF
-					/*
-					TexturedObjectShader.setVec3("lightPos", lightPos);
-					TexturedObjectShader.setVec3("viewPos", camera.Position);
-					TexturedObjectShader.setVec3("light.position", camera.Position);
-					TexturedObjectShader.setVec3("light.direction", camera.Front);
-					TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-					TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-					projectileObject->DrawMesh();*/
 
 					sphereShader.Use();
 
@@ -1091,13 +1024,7 @@ int main()
 			cerr << "OpenGL error post sphere render: " << error << endl;
 		}
 
-		//Light source
-		lightShader.Use();
-		lightShader.setMat4("model", lightModel);
-		lightShader.setMat4("projection", projection);
-		lightShader.setMat4("view", view);
-
-		//sceneObjectDictionary["Light Object"]->DrawMesh();
+		
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
