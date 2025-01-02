@@ -195,5 +195,32 @@
 * Find the texture unit that hasn't been used yet. Set that to the active and bind it.
 * Create a new texture and add it to the loaded textures vector
 * Now loads the texture into this container when I read it manually
+* 
+* Need to edit the mesh class to use it. Pass in the loaded textures instead of the texture base unit
+
+
+Model loader does Model LoadModel which is called in the constructor
+
+Binds and activates the texture in Model's TextureFromFile. So bind it there using the same thing as LoadTextures.
+So the load texture one now creates the texture and puts it in that overall container
+LoadMaterialTextures will get the texture given the type. Let texture from file read and generate the ID
+Give each model a name, then I can look for the texture name and the different types if there are multiple
+
+am close to fixing textures now. Just need it so that when the mesh script reads the texture it adds it to this global pool of textures
+
+//textures are now created and bound in the loadMaterialTextures method
+
+Texture held in textures is the same as what is in the global textures pool
+Given name modelName + suffix in both
+#
+
+New texture loading:
+Load texture will look at all textures 
+When loading the texture from the model it reads it as a diffuse texture
+
+Even this could be improved. Shouldn't need to pass in the textures externally, should be held on the model.
+Before it was completely separated which was bad, but here it's dependant on main.
+Can make a compromise later once this works 
+
 
 */

@@ -1,15 +1,15 @@
 #include "Model.h"
 
 
-void Model::Draw(Shader& shader, unsigned int baseTextureUnit)
+void Model::Draw(Shader& shader, vector<Texture>& loadedTextures)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
-		meshes[i].Draw(shader,  baseTextureUnit);
+		meshes[i].Draw(shader, loadedTextures);
 }
 
-void Model::loadModel(string path, unsigned int baseTextureUnit) {
+void Model::loadModel(string path, vector<Texture>& loadedTextures) {
 	Assimp::Importer import;
-	const aiScene * scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+	const aiScene * scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -19,25 +19,25 @@ void Model::loadModel(string path, unsigned int baseTextureUnit) {
 	}
 	directory = path.substr(0, path.find_last_of('/'));
 
-	processNode(scene->mRootNode, scene, baseTextureUnit);
+	processNode(scene->mRootNode, scene, loadedTextures);
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene, unsigned int baseTextureUnit)
+void Model::processNode(aiNode* node, const aiScene* scene, vector<Texture>& loadedTextures)
 {
 	// process all the node's meshes (if any)
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(processMesh(mesh, scene, baseTextureUnit));
+		meshes.push_back(processMesh(mesh, scene, loadedTextures));
 	}
 	// then do the same for each of its children
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{
-		processNode(node->mChildren[i], scene, baseTextureUnit);
+		processNode(node->mChildren[i], scene, loadedTextures);
 	}
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, unsigned int baseTextureUnit)
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, vector<Texture>& loadedTextures)
 {
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
@@ -103,25 +103,26 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, unsigned int baseTex
 	// normal: texture_normalN
 
 	// 1. diffuse maps
-	vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", baseTextureUnit);
+	vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", loadedTextures);
 	textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 	// 2. specular maps
-	vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", baseTextureUnit);
+	vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", loadedTextures);
 	textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	// 3. normal maps
-	std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", baseTextureUnit);
+	std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", loadedTextures);
 	textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-	// 4. height maps
-	std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", baseTextureUnit);
-	textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+	
+	
 
 
-	return Mesh(vertices, indices, textures, baseTextureUnit);
+
+
+	return Mesh(vertices, indices, textures, loadedTextures, name);
 }
 
 
 
-unsigned int TextureFromFile(const char* path, const string& directory, bool gamma, unsigned int baseTextureUnit)
+unsigned int TextureFromFile(const char* path, const string& directory, bool gamma, vector<Texture>& loadedTextures)
 {
 	string filename = string(path);
 	filename = directory + '/' + filename;
@@ -141,9 +142,10 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 		else if (nrComponents == 4)
 			format = GL_RGBA;
 
-		//Generates a textureID for this texture
-		glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
-		glBindTexture(GL_TEXTURE_2D, textureID);
+
+
+
+
 		//glBindTexture(GL_TEXTURE_2D, baseTextureUnit);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -154,29 +156,32 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);
+
+
 	}
 	else
 	{
 		std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
+
 	}
 
 	return textureID;
 }
 
-vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, unsigned int baseTextureUnit)
+vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, vector<Texture>& loadedTextures)
 {
 	vector<Texture> textures;
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
-		aiString str;
-		mat->GetTexture(type, i, &str);
+		aiString importerPathString;
+		mat->GetTexture(type, i, &importerPathString);
 		// check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
 		bool skip = false;
 		for (unsigned int j = 0; j < textures_loaded.size(); j++)
 		{
 			//If the loaded textures already contains the one to load, just set the material texture to that to avoid making new ones each time
-			if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
+			if (textures_loaded[j].path == importerPathString.C_Str())
 			{
 				textures.push_back(textures_loaded[j]);
 				skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
@@ -185,10 +190,65 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 		}
 		if (!skip)
 		{   // if texture hasn't been loaded already, load it
-			Texture texture;
-			texture.id = TextureFromFile(str.C_Str(), this->directory, false, baseTextureUnit);
-			texture.type = TextureType::DIFFUSE;
-			texture.path = str.C_Str();
+
+
+			TextureType foundType = TextureType::DIFFUSE;
+			string textureSuffix;
+			switch (type)
+			{
+			case aiTextureType_NONE:
+				break;
+			case aiTextureType_DIFFUSE:
+				foundType = TextureType::DIFFUSE;
+				textureSuffix = "_diffuse";
+				break;
+			case aiTextureType_SPECULAR:
+				break;
+			case aiTextureType_EMISSIVE:
+				break;
+			case aiTextureType_HEIGHT:
+				foundType = TextureType::NORMAL;
+				textureSuffix = "_normal";
+				break;
+			case aiTextureType_NORMALS:
+				foundType = TextureType::NORMAL;
+				textureSuffix = "_normal";
+				break;
+			default:
+				break;
+			}
+
+			int highestUnitNo = 0;
+			for (Texture& texture : loadedTextures)
+			{
+				if (texture.heldUnit > highestUnitNo)
+				{
+					highestUnitNo = texture.heldUnit;
+				}
+			}
+			
+
+			
+
+			
+			string texturePath = importerPathString.C_Str();
+			
+
+			Texture texture{
+				name + textureSuffix,
+				TextureFromFile(importerPathString.C_Str(), this->directory, false, loadedTextures),
+				highestUnitNo + 1,
+				foundType,
+				texturePath,
+				0
+			};
+
+			loadedTextures.push_back(texture);
+
+			
+			glActiveTexture(texture.heldUnit);
+			glBindTexture(GL_TEXTURE_2D, texture.id);
+
 			textures.push_back(texture);
 			textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
 		}
