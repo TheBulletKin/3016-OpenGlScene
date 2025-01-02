@@ -187,7 +187,7 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 		{   // if texture hasn't been loaded already, load it
 			Texture texture;
 			texture.id = TextureFromFile(str.C_Str(), this->directory, false, baseTextureUnit);
-			texture.type = typeName;
+			texture.type = TextureType::DIFFUSE;
 			texture.path = str.C_Str();
 			textures.push_back(texture);
 			textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.

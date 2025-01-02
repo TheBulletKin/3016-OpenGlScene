@@ -10,6 +10,7 @@
 
 #include "Mesh.h";
 #include "stb_image.h"
+#include "ModelData.h"
 
 using namespace std;
 using namespace glm;
