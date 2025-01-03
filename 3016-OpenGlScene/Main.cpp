@@ -46,7 +46,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 
-
+#pragma region Globals and settings
 //--- Screen settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -85,7 +85,6 @@ const int sphereVerticesCount = latitudeSteps * longitudeSteps;
 const int sphereIndicesCount = (longitudeSteps - 1) * (latitudeSteps - 1) * 6;
 
 // -- Texture holder
-
 map<string, unsigned int> texNameToId;
 map<string, unsigned int> texNameToUnitNo;
 
@@ -94,29 +93,47 @@ random_device rd; //Seed generation
 mt19937 gen(rd()); //Random value generator using the this mt19937 method. Creates large integers
 uniform_real_distribution<> dis(0.0, 1.0);
 
-//TODO
-/* Each model needs to hold its texture id when it is created, used when it renders. Don't hold that on here.
-* By holding the generated texture IDs I don't need to worry about the order.
-* One holds the actual ID, required when binding to texture unit.
-* Other holds texture unit number
+//-- Audio
+bool isPlayingBackgroundAudio = true; 
+ISoundEngine* audioEngine;
+ISound* backgroundSound;
+#pragma endregion Globals and settings
 
 
-*/
-
-//--- Other methods
+//--- Method prototypes
 void processInput(GLFWwindow* window);
 void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
 void LoadTexture(unsigned int& textureId, const char* filePath);
 void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
 void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]);
 
+
+#pragma region Structures
 struct Point {
 	float x, y, z;
-
 };
+
+struct PointLight {
+	vec3 position;
+	//Attenuation
+	float constant;
+	float linear;
+	float quadratic;
+	//Colours for respective light values
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+int maxPointLights = 8;
+vector<PointLight> staticPointLights;
+vector<PointLight> dynamicPointLights;
+#pragma endregion Structures
+
+
 
 int main()
 {
+#pragma region OpenGl Setup
 	//--- Initialize GLFW
 	glfwInit();
 
@@ -162,16 +179,20 @@ int main()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+#pragma endregion  OpenGl Setup
 
-
+#pragma region Audio Setup
 	//---- Audio
-	ISoundEngine* audioEngine = createIrrKlangDevice();
-	ISound* backgroundSound = audioEngine->play2D("Media/Audio/mysterious-ambient-suspense-atmosphere-252023.mp3", true, false, true);
+	audioEngine = createIrrKlangDevice();
+	backgroundSound = audioEngine->play2D("Media/Audio/mysterious-ambient-suspense-atmosphere-252023.mp3", true, false, true);
 	if (backgroundSound)
 	{
 		backgroundSound->setVolume(0.04f);
 	}
+#pragma endregion
 
+
+#pragma region Base Cube Object
 	// ---------------------------------------------------
 	// Base cube creation
 	// ---------------------------------------------------
@@ -249,8 +270,9 @@ int main()
 	//int cubeIndicesCount = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
 	CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
+#pragma endregion
 
-
+#pragma region Plane Object
 	// ----------------------------------------------
 	// Ground plane creation
 	// ----------------------------------------------
@@ -279,11 +301,21 @@ int main()
 
 	CreateObject("Plane Object", planeVertices, planeIndicesCount, planeIndices, planeIndicesCount, planeAttributeSizes, planeAttributeSize);
 
+#pragma endregion
+
+
+
+	
+
+	
+
+
+	
 
 	// ----------------------------------------------
 	// Projectile cube prefab creation
 	// ----------------------------------------------
-	CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
+	//CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
 	//--- Projectile spawning variables
@@ -433,58 +465,12 @@ int main()
 
 
 	// ----------------------------------------
-	// Light object creation
+	// Light creation
 	// ----------------------------------------
 
-	float lightCubeVertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f
-	};
-
-	int lightCubeAttributesSize = 3;
-	vector<int> lightCubeSectionSizes =
-	{
-		3, //Position
-	};
+	vec3 lightColour(1.0f, 1.0f, 1.0f);
+	vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
+	vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
 
 	vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.5f,  3.0f),
@@ -493,10 +479,23 @@ int main()
 		glm::vec3(6.0f,  0.5f, -3.0f)
 	};
 
-	int lightCubeVerticesCount = sizeof(lightCubeVertices) / (sizeof(lightCubeVertices[0] * lightCubeAttributesSize));
-	CreateObject("Light Object", lightCubeVertices, lightCubeVerticesCount, NULL, 0, lightCubeSectionSizes, lightCubeAttributesSize);
+	for (vec3 lightPos : pointLightPositions)
+	{
+		PointLight newLight{
+			lightPos,
+			1.0f,
+			0.09f,
+			0.032f,
+			ambientLightColour,
+			lightColour,
+			lightColour
+		};
+		staticPointLights.push_back(newLight);
+	}
 
-	vec3 lightColour(1.0f, 1.0f, 1.0f);
+	
+
+	
 
 	Shader lightShader("Shaders/LightsourceVertexShader.v", "Shaders/LightsourceFragmentShader.f");
 
@@ -768,39 +767,19 @@ int main()
 		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-		// point light 1
-
-		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-		TexturedObjectShader.setVec3("pointLights[0].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
-		TexturedObjectShader.setVec3("pointLights[0].specular", lightColour.x, lightColour.y, lightColour.z);
-		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
-		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
-		TexturedObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
-		// point light 2
-		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-		TexturedObjectShader.setVec3("pointLights[1].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[1].diffuse", lightColour);
-		TexturedObjectShader.setVec3("pointLights[1].specular", lightColour.x, lightColour.y, lightColour.z);
-		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
-		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
-		TexturedObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
-		// point light 3
-		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-		TexturedObjectShader.setVec3("pointLights[2].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[2].diffuse", lightColour);
-		TexturedObjectShader.setVec3("pointLights[2].specular", lightColour.x, lightColour.y, lightColour.z);
-		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
-		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
-		TexturedObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
-		// point light 4
-		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-		TexturedObjectShader.setVec3("pointLights[3].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		TexturedObjectShader.setVec3("pointLights[3].diffuse", lightColour);
-		TexturedObjectShader.setVec3("pointLights[3].specular", lightColour.x, lightColour.y, lightColour.z);
-		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
-		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
-		TexturedObjectShader.setFloat("pointLights[3].quadratic", 0.032f);
+		int pointLightIndex = 0;
+		string pointLightUniformTag;
+		for (PointLight light : staticPointLights) {
+			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".diffuse", lightColour);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".specular", lightColour.x, lightColour.y, lightColour.z);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".constant", light.constant);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".linear", light.linear);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
+			pointLightIndex++;
+		}
 		// spotLight
 		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
 		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
@@ -894,7 +873,7 @@ int main()
 			Point bottomRight = { 40.0f, -0.1f, -10.0f };
 
 
-			float ySpawnValueMin = 0.8f;
+			float ySpawnValueMin = 1.5f;
 			float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
 
 			float randomX = topLeft.x + (bottomRight.x - topLeft.x) * dis(gen);
@@ -1080,13 +1059,7 @@ int main()
 			cerr << "OpenGL error post sphere render: " << error << endl;
 		}
 
-		//Light source
-		lightShader.Use();
-		lightShader.setMat4("model", lightModel);
-		lightShader.setMat4("projection", projection);
-		lightShader.setMat4("view", view);
-
-		//sceneObjectDictionary["Light Object"]->DrawMesh();
+		
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1247,6 +1220,12 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		if (isPlayingBackgroundAudio)
+		{
+			
+		}
+	}
 }
 
 //--- Callback method when window is resized

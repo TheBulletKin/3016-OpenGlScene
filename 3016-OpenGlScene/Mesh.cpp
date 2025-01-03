@@ -59,6 +59,7 @@ void Mesh::Draw(Shader& shader, unsigned int baseTextureUnit)
         //shader.setInt(("material." + name + number).c_str(), i);
        // glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
+    shader.Use();
     shader.setInt(("texture_diffuse1"), baseTextureUnit);
     glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
 
