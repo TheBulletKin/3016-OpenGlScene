@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Projects\C++ Console Projects\3016-OpenGlScene\External Dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Projects\C++ Console Projects\3016-OpenGlScene\External Dependencies\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)External Dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)External Dependencies\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

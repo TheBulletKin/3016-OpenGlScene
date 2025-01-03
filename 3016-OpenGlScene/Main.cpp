@@ -449,8 +449,8 @@ int main()
 	vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.5f,  3.0f),
 		glm::vec3(12.3f, 0.5f, -4.0f),
-		glm::vec3(-4.0f,  0.5f, -12.0f),
-		glm::vec3(6.0f,  0.5f, -3.0f)
+		glm::vec3(-2.0f,  0.5f, -12.0f),
+		glm::vec3(6.0f,  0.5f, -6.0f)
 	};
 
 	for (vec3 lightPos : pointLightPositions)
