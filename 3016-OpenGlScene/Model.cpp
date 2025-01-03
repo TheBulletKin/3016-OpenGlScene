@@ -70,15 +70,15 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, vector<Texture>& loa
 			vec.y = mesh->mTextureCoords[0][i].y;
 			vertex.TexCoords = vec;
 			// tangent
-			//vector.x = mesh->mTangents[i].x;
-			//vector.y = mesh->mTangents[i].y;
-			//vector.z = mesh->mTangents[i].z;
-			//vertex.Tangent = vector;
+			vector.x = mesh->mTangents[i].x;
+			vector.y = mesh->mTangents[i].y;
+			vector.z = mesh->mTangents[i].z;
+			vertex.Tangent = vector;
 			// bitangent
-			//vector.x = mesh->mBitangents[i].x;
-			//vector.y = mesh->mBitangents[i].y;
-			//vector.z = mesh->mBitangents[i].z;
-			//vertex.Bitangent = vector;
+			vector.x = mesh->mBitangents[i].x;
+			vector.y = mesh->mBitangents[i].y;
+			vector.z = mesh->mBitangents[i].z;
+			vertex.Bitangent = vector;
 		}
 		else
 			vertex.TexCoords = glm::vec2(0.0f, 0.0f);
@@ -101,7 +101,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, vector<Texture>& loa
 	// diffuse: texture_diffuseN
 	// specular: texture_specularN
 	// normal: texture_normalN
-	
+
 	// 1. diffuse maps
 	vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", loadedTextures);
 	textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
@@ -112,10 +112,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, vector<Texture>& loa
 	std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", loadedTextures);
 	textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 	
-	GLenum error;
-	while ((error = glGetError()) != GL_NO_ERROR) {
-		cerr << "OpenGL error after tree instancing setup: " << error << endl;
-	}
+	
+
 
 
 
@@ -159,10 +157,7 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 
 		stbi_image_free(data);
 
-		GLenum error;
-		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error after tree instancing setup: " << error << endl;
-		}
+
 	}
 	else
 	{
@@ -183,19 +178,16 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 		mat->GetTexture(type, i, &importerPathString);
 		// check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
 		bool skip = false;
-		GLenum error;
-		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error after tree instancing setup: " << error << endl;
-		}
+		
 		for (unsigned int j = 0; j < textures_loaded.size(); j++)
 		{
 			//If the loaded textures already contains the one to load, just set the material texture to that to avoid making new ones each time
-			if (textures_loaded[j].path == importerPathString.C_Str())
-			{
-				textures.push_back(textures_loaded[j]);
-				skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-				break;
-			}
+			//if (textures_loaded[j].path == importerPathString.C_Str())
+			//{
+				//textures.push_back(textures_loaded[j]);
+				//skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
+				////break;
+			//}
 		}
 		if (!skip)
 		{   // if texture hasn't been loaded already, load it
@@ -234,46 +226,35 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 				{
 					highestUnitNo = texture.heldUnit;
 				}
-
 			}
 			
 
 			
-			error;
-			while ((error = glGetError()) != GL_NO_ERROR) {
-				cerr << "OpenGL error after tree instancing setup: " << error << endl;
-			}
+
 			
 			string texturePath = importerPathString.C_Str();
 			
 
 			Texture texture{
 				name + textureSuffix,
-				TextureFromFile(importerPathString.C_Str(), this->directory, true, loadedTextures),
+				TextureFromFile(importerPathString.C_Str(), this->directory, false, loadedTextures),
 				highestUnitNo + 1,
 				foundType,
 				texturePath,
 				0
 			};
-			error;
-			while ((error = glGetError()) != GL_NO_ERROR) {
-				cerr << "OpenGL error after tree instancing setup: " << error << endl;
-			}
+
 			loadedTextures.push_back(texture);
 
-			//GLuint currentTexture;
-			//glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-			//glActiveTexture(GL_TEXTURE0 + texture.heldUnit);
-			//glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-			//glBindTexture(GL_TEXTURE_2D, texture.id);
-			//glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-			error;
-			while ((error = glGetError()) != GL_NO_ERROR) {
-				cerr << "OpenGL error after tree instancing setup: " << error << endl;
-			}
+			GLuint currentTexture;
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
+			glActiveTexture(texture.heldUnit);
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
+			glBindTexture(GL_TEXTURE_2D, texture.id);
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
+
 			textures.push_back(texture);
 			textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
-			
 		}
 	}
 	return textures;

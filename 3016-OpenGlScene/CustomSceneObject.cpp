@@ -94,11 +94,11 @@ void CustomSceneObject::PrepareVertexAttributeArrays(vector<VertAttribute> attri
 		// Fourth parameter: NO normalisation is applied
 		// Fifth parameter: The stride - or numer of bytes between the start of one vertex and the start of the next. Float * 3 given there are 3 components
 		// Sixth parameter: Offset in the buffer where this attribute data begins, set to 0 as this is the only attribute
-		
+
 		glVertexAttribPointer(startPos, vertAttribute.length, GL_FLOAT, GL_FALSE, stride, (void*)(offset));
 		glEnableVertexAttribArray(startPos);
+
 		offset += vertAttribute.length * sizeof(float);
-		
 	}
 
 	glBindVertexArray(0);

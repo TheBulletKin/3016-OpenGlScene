@@ -34,11 +34,11 @@ void Mesh::setupMesh(vector<Texture>& loadedTextures)
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 	// vertex tangent
-	//glEnableVertexAttribArray(4);
-	//glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
 	// vertex bitangent
-	//glEnableVertexAttribArray(5);
-	//glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 
 
 	glBindVertexArray(0);
@@ -58,25 +58,6 @@ void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
 		//string name = "texture_diffuse";
 		string typeSuffix = "";
 		GLuint currentTexture;
-		GLenum error;
-		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error in mesh drawing: " << error << endl;
-		}
-
-		//Ignore potential for normal maps for now
-		
-		glActiveTexture(GL_TEXTURE0 + textures[i].heldUnit);
-		glBindTexture(GL_TEXTURE_2D, textures[i].id); //Temp fix that I can't explain
-		glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-		shader.Use();
-		shader.setInt("texture_diffuse1", textures[i].heldUnit);
-		
-		error;
-		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error in mesh drawing: " << error << endl;
-		}
-
-		/*
 		for (Texture texture : loadedTextures) {
 			if (texture.name == textures[i].name)
 			{
@@ -105,7 +86,7 @@ void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
 				break;
 				
 			}
-		}*/
+		}
 
 	
 	}
@@ -119,9 +100,6 @@ void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
 	// draw mesh
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-	GLuint currentTexture;
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 	glBindVertexArray(0);
 
 }

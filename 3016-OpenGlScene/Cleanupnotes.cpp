@@ -224,11 +224,3 @@ Can make a compromise later once this works
 
 
 */
-
-/* Start rolling back stuff as it didn't work
-* Sphere shader, model shader, custom textured object, terrain
-Change the textured object shader to use the same light system as the new shader for easy assigning
-Going to have to go for a full reversion. Bring back the model shader and get it working with that instead.
-Scrap my new shader and just edit the model one to use lighting
-
-*/

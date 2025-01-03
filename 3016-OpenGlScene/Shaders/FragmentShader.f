@@ -8,6 +8,22 @@ struct Material{
 
 uniform Material material;
 
+struct Light {
+    vec3 position;
+    vec3 direction;
+    float cutOff;
+    float outerCutOff;
+  
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+uniform Light light; 
 
 struct DirLight {
     vec3 direction;
@@ -29,7 +45,7 @@ struct PointLight {
     vec3 diffuse;
     vec3 specular;
 };  
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 8  
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 
 struct SpotLight {
@@ -72,15 +88,15 @@ void main()
 {
 	
     
-    
-	vec4 colour;
+    /*
+	//vec4 colour;
 	//if (useTexture)
    // {
-        colour = texture(texture1, TexCoord);   		 
-    //}
-    //else
-    //{        
-        //colour = vec4(objectColor, 1.0); 
+   //     colour = texture(texture1, TexCoord);   		 
+   // }
+   // else
+   // {        
+     //   colour = vec4(objectColor, 1.0); 
     //}
 
 	//vec3 lightDir = normalize(-light.direction); //For directional lights
@@ -117,7 +133,7 @@ void main()
     //Distance attentuation
    // float distance    = length(light.position - FragPos);
    // float attenuation = 1.0 / (light.constant + light.linear * distance + 
-    		   // light.quadratic * (distance * distance));
+    		    light.quadratic * (distance * distance));
    // ambient  *= attenuation; 
    // diffuse  *= attenuation;
     //specular *= attenuation;  
@@ -130,7 +146,7 @@ void main()
 
 	//vec3 lighting = ambient + diffuse;      
 	//FragColor = vec4(lighting * colour.rgb, colour.a);
-    
+    */
 
     // properties
     vec3 norm = normalize(Normal);

@@ -1,9 +1,8 @@
 #version 330 core
 //Following's location value will be used by the vertex attribute pointer
 layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
-layout (location = 3) in mat4 instanceMatrix;
+layout (location = 1) in vec2 aTexCoord;
+layout (location = 2) in vec3 aNormal;
 
 //Pass the texture coordinate to the fragment shader
 out vec2 TexCoord;
@@ -14,31 +13,17 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform mat3 inverseModelMat;
-uniform bool useInstancing; 
-
 void main()
 {	
 	TexCoord = aTexCoord;
 
-	
-	
+	//Frag pos for this vertex. Fragments inbetween interpolate it
+	FragPos = vec3(model * vec4(aPos, 1.0));
 	
 	//Normal = aNormal;
 
 	//This is computationally expensive, better to pass to the shader as a uniform
-	Normal = inverseModelMat * aNormal;  
+	Normal = mat3(transpose(inverse(model))) * aNormal;  
 
-	if(useInstancing){
-        //gl_Position = projection * view * instanceMatrix * vec4(aPos, 1.0);
-        FragPos = vec3(instanceMatrix * vec4(aPos, 1.0)); 
-        gl_Position = projection * view * instanceMatrix * vec4(FragPos, 1.0);
-        
-    }
-    else {
-        //gl_Position = projection * view * model * vec4(aPos, 1.0);
-        FragPos = vec3(model * vec4(aPos, 1.0)); 
-        gl_Position = projection * view * model * vec4(FragPos, 1.0);
-        
-    }
+	gl_Position = projection * view * vec4(FragPos, 1.0);
 }
