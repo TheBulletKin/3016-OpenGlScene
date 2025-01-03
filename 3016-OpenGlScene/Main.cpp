@@ -304,59 +304,6 @@ int main()
 
 #pragma endregion
 
-#pragma region Lights Setup
-	// ----------------------------------------
-	// Light creation
-	// ----------------------------------------
-
-	vec3 singleLightPos(10.0f, 5.0f, -7.0f);
-	vec3 lightColour(1.0f, 1.0f, 1.0f);
-	vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
-	vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
-
-	vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.5f,  3.0f),
-		glm::vec3(12.3f, 0.5f, -4.0f),
-		glm::vec3(-4.0f,  0.5f, -12.0f),
-		glm::vec3(6.0f,  0.5f, -3.0f)
-	};
-
-	for (vec3 lightPos : pointLightPositions)
-	{
-		PointLight newLight{
-			lightPos,
-			1.0f,
-			0.09f,
-			0.032f,
-			ambientLightColour,
-			lightColour,
-			lightColour
-		};
-		staticPointLights.push_back(newLight);
-	}
-
-	// -------------------------
-	// Variable light colour through noise
-	// -----------------------------
-
-	FastNoiseLite lightColourNoiseGenerator;
-	lightColourNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-	lightColourNoiseGenerator.SetFrequency(0.2f);
-
-	vec3 RedColour(1.0f, 0.0f, 0.0f);
-	vec3 OrangeColour(1.0f, 0.65f, 0.0f);
-
-	const int lightNoiseTextureLength = 512;
-	int lightNoiseTextureCurrentIndex = 0;
-	float lightNoiseScale = 0.4f;
-
-	float lightNoiseValues[lightNoiseTextureLength];
-
-	for (int i = 0; i < lightNoiseTextureLength; i++)
-	{
-		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
-	}
-#pragma endregion
 
 #pragma region Sphere Projectile Prefab and setup
 	// ----------------------------------------
@@ -404,18 +351,27 @@ int main()
 	// ---------------------------------
 	Shader sphereShader("Shaders/SphereVertexShader.v", "Shaders/SphereFragmentShader.f");
 
-	//sphereShader.Use();
-	//sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));	
+	sphereShader.Use();
+	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));	
 	
-	//sphereShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-	//sphereShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-	//sphereShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-	//sphereShader.setFloat("material.shininess", 32.0f);
-	//sphereShader.setBool("flatShading", false);
+	sphereShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+	sphereShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+	sphereShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	sphereShader.setFloat("material.shininess", 32.0f);
+	sphereShader.setBool("flatShading", false);
 #pragma endregion
 
 #pragma region Sphere Displacement Setup
-	
+	unsigned int containerTextureId;
+
+	LoadTexture(containerTextureId, "Media/container.jpg");
+
+	texNameToUnitNo["container"] = currentUnit;
+	currentUnit++;
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["container"]);
+	glBindTexture(GL_TEXTURE_2D, containerTextureId); //Like last time, future operations will affect this texture
+
+	texNameToId["container"] = containerTextureId;
 	
 
 	//temp -----------------
@@ -532,7 +488,59 @@ int main()
 #pragma endregion
 
 
+#pragma region Lights Setup
+	// ----------------------------------------
+	// Light creation
+	// ----------------------------------------
 
+	vec3 singleLightPos(10.0f, 5.0f, -7.0f);
+	vec3 lightColour(1.0f, 1.0f, 1.0f);
+	vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
+	vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
+
+	vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.5f,  3.0f),
+		glm::vec3(12.3f, 0.5f, -4.0f),
+		glm::vec3(-4.0f,  0.5f, -12.0f),
+		glm::vec3(6.0f,  0.5f, -3.0f)
+	};
+
+	for (vec3 lightPos : pointLightPositions)
+	{
+		PointLight newLight{
+			lightPos,
+			1.0f,
+			0.09f,
+			0.032f,
+			ambientLightColour,
+			lightColour,
+			lightColour
+		};
+		staticPointLights.push_back(newLight);
+	}
+
+	// -------------------------
+	// Variable light colour through noise
+	// -----------------------------
+
+	FastNoiseLite lightColourNoiseGenerator;
+	lightColourNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	lightColourNoiseGenerator.SetFrequency(0.2f);
+
+	vec3 RedColour(1.0f, 0.0f, 0.0f);
+	vec3 OrangeColour(1.0f, 0.65f, 0.0f);
+
+	const int lightNoiseTextureLength = 512;
+	int lightNoiseTextureCurrentIndex = 0;
+	float lightNoiseScale = 0.4f;
+
+	float lightNoiseValues[lightNoiseTextureLength];
+
+	for (int i = 0; i < lightNoiseTextureLength; i++)
+	{
+		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
+	}
+#pragma endregion
 
 #pragma region Cube and Plane Shader
 	// --------------------------------------------
@@ -568,16 +576,7 @@ int main()
 	// --------------------------------------------
 	// Texture loading
 	// --------------------------------------------
-	unsigned int containerTextureId;
-
-	LoadTexture(containerTextureId, "Media/container.jpg");
-
-	texNameToUnitNo["container"] = currentUnit;
-	currentUnit++;
-	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["container"]);
-	glBindTexture(GL_TEXTURE_2D, containerTextureId); //Like last time, future operations will affect this texture
-
-	texNameToId["container"] = containerTextureId;
+	
 	
 #pragma endregion
 
@@ -649,8 +648,8 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glBufferData(GL_ARRAY_BUFFER, numberOfTrees * sizeof(mat4), &treeModelMatrices[0], GL_STATIC_DRAW);
 
-	unsigned int treeVAO = treeModel.meshes[0].VAO;
-	glBindVertexArray(treeVAO);
+	//unsigned int treeVAO = treeModel.meshes[0].VAO;
+	//glBindVertexArray(treeVAO);
 	// set attribute pointers for matrix (4 times vec4)
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
@@ -745,7 +744,7 @@ int main()
 		// Cube and plane lighting update
 		// -----------------------------
 		// directional light
-		
+		/*
 		TexturedObjectShader.Use();
 		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
 		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
@@ -755,18 +754,6 @@ int main()
 		int pointLightIndex = 0;
 		string pointLightUniformTag;
 		for (PointLight light : staticPointLights) {
-			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".diffuse", lightColour);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".specular", lightColour);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".constant", light.constant);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".linear", light.linear);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
-			pointLightIndex++;
-		}
-		pointLightIndex = 4;
-		for (PointLight light : dynamicPointLights) {
 			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
 			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
 			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
@@ -788,7 +775,7 @@ int main()
 		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
 		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-		
+		*/
 
 		// ----------------------------
 		// Model lighting update
@@ -1020,7 +1007,7 @@ int main()
 
 
 #pragma region Projectile Update
-		
+		/*
 		for (size_t i = 0; i < projectileObjects.size();) {
 			ArcingProjectileObject* projectileObject = projectileObjects[i];
 			if (projectileObject != NULL)
@@ -1061,7 +1048,7 @@ int main()
 			}
 
 
-		}
+		}*/
 #pragma endregion
 
 		
@@ -1070,7 +1057,7 @@ int main()
 		
 
 #pragma region Proc terrain Rendering
-		
+		ProceduralObjectShader.Use();
 
 		//Terrain
 		mat4 terrainModel = mat4(1.0f);
@@ -1079,7 +1066,6 @@ int main()
 		terrainModel = rotate(terrainModel, radians(0.0f), vec3(1.0f, 0.0f, 0.0f));
 		//Elevation to look upon terrain
 		terrainModel = translate(terrainModel, vec3(0.0f, -2.f, -1.5f));
-		ProceduralObjectShader.Use();
 		ProceduralObjectShader.setMat4("model", terrainModel);
 
 
@@ -1091,26 +1077,26 @@ int main()
 		mat4 sphereModel = mat4(1.0f);
 		sphereModel = translate(sphereModel, vec3(8.0f, 0.0f, -12.0f));
 
-		//sphereShader.Use();
+		sphereShader.Use();
 
-		//sphereShader.setMat4("model", sphereModel);
-		//sphereShader.setMat4("projection", projection);
-		//sphereShader.setMat4("view", view);
+		sphereShader.setMat4("model", sphereModel);
+		sphereShader.setMat4("projection", projection);
+		sphereShader.setMat4("view", view);
 
-		//sphereShader.setFloat("time", currentFrame);
-		//sphereShader.setFloat("displacementScale", 0.4f);
-
-
+		sphereShader.setFloat("time", currentFrame);
+		sphereShader.setFloat("displacementScale", 0.4f);
 
 
 
 
 
-		//sphereShader.setVec3("lightPos", vec3(5.0f, 7.0f, -10.0f));
-		//sphereShader.setVec3("viewPos", camera.Position);
 
 
-		//sceneObjectDictionary["Sphere Object"]->DrawMesh();
+		sphereShader.setVec3("lightPos", vec3(5.0f, 7.0f, -10.0f));
+		sphereShader.setVec3("viewPos", camera.Position);
+
+
+		sceneObjectDictionary["Sphere Object"]->DrawMesh();
 
 
 		error;
