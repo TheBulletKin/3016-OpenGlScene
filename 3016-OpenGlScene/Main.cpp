@@ -378,16 +378,16 @@ int main()
 	//The texture sampler on the fragment shader is given value '0' now, means later on in the render loop it will use texture unit zero
 
 
-	//TexturedObjectShader.setInt("texture1", texturePos);
-	TexturedObjectShader.setBool("useTexture", false);
+	TexturedObjectShader.setInt("texture1", texNameToUnitNo["container"]);
+	TexturedObjectShader.setBool("useTexture", true);
 	TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	TexturedObjectShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
 	TexturedObjectShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-	TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+	TexturedObjectShader.setVec3("material.diffuse", 1.0f, 1.0f, 1.0f);
 	TexturedObjectShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 	TexturedObjectShader.setFloat("material.shininess", 32.0f);
 	TexturedObjectShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); 
 	TexturedObjectShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 	//TexturedObjectShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
 	TexturedObjectShader.setFloat("light.constant", 1.0f);
@@ -609,8 +609,8 @@ int main()
 
 	modelShader.Use();
 	modelShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
-	modelShader.setVec3("material.ambient", 0.2f, 0.2f, 0.2f);
-	modelShader.setVec3("material.diffuse", 0.7f, 0.7f, 0.7f);
+	modelShader.setVec3("material.ambient", 0.25f, 0.25f, 0.25f);
+	modelShader.setVec3("material.diffuse", 0.8f, 0.8f, 0.8f);
 	modelShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 	modelShader.setFloat("material.shininess", 2.0f);
 	modelShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
@@ -889,7 +889,7 @@ int main()
 			TexturedObjectShader.setMat4("model", model);
 
 
-			sceneObjectDictionary["Cube Object"]->DrawMesh();
+			//sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
 #pragma endregion
 
@@ -902,7 +902,7 @@ int main()
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 
 		TexturedObjectShader.Use();
-		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		
 		TexturedObjectShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
@@ -1054,6 +1054,7 @@ int main()
 					sphereShader.setInt("currentPointLights", numberOfPointLights);
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
+					currentBubbles--;
 					
 
 				}
@@ -1106,11 +1107,12 @@ int main()
 
 		//Terrain
 		mat4 terrainModel = mat4(1.0f);
-		terrainModel = scale(terrainModel, vec3(2.0f, 2.0f, 2.0f));
+		terrainModel = translate(terrainModel, vec3(15.0f, 0.0f, 45.0f));
+		
 		//Looking straight forward
 		terrainModel = rotate(terrainModel, radians(0.0f), vec3(1.0f, 0.0f, 0.0f));
 		//Elevation to look upon terrain
-		terrainModel = translate(terrainModel, vec3(0.0f, -2.f, -1.5f));
+		terrainModel = scale(terrainModel, vec3(6.0f, 1.0f, 6.0f));
 		ProceduralObjectShader.Use();
 		ProceduralObjectShader.setMat4("model", terrainModel);
 
@@ -1462,13 +1464,13 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 	rowIndex = 0;
 	for (int i = 0; i < trianglesGrid - 1; i += 2)
 	{
-		terrainIndices[i][0] = columnIndicesOffset + rowIndicesOffset; //top left
-		terrainIndices[i][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
-		terrainIndices[i][1] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
+		terrainIndices[i][0] = columnIndicesOffset + rowIndicesOffset; // top left
+		terrainIndices[i][1] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; // bottom left
+		terrainIndices[i][2] = 1 + columnIndicesOffset + rowIndicesOffset; // top right
 
-		terrainIndices[i + 1][0] = 1 + columnIndicesOffset + rowIndicesOffset; //top right
-		terrainIndices[i + 1][2] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom left
-		terrainIndices[i + 1][1] = 1 + RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; //bottom right
+		terrainIndices[i + 1][0] = 1 + columnIndicesOffset + rowIndicesOffset; // top right
+		terrainIndices[i + 1][2] = 1 + RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; // bottom right
+		terrainIndices[i + 1][1] = RENDER_DISTANCE + columnIndicesOffset + rowIndicesOffset; // bottom left
 
 		//Shifts x position across for next chunk along grid
 		columnIndicesOffset = columnIndicesOffset + 1;
@@ -1518,15 +1520,16 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 
 			if (biomeValue <= -0.75f) //Plains
 			{
-				terrainVertices[i * 6 + 3] = 0.0f;
-				terrainVertices[i * 6 + 4] = 0.75f;
-				terrainVertices[i * 6 + 5] = 0.25f;
+			
+				terrainVertices[i * 6 + 3] = 82.0f / 255.0f;
+				terrainVertices[i * 6 + 4] = 37.0f / 255.0f;
+				terrainVertices[i * 6 + 5] = 24.0f / 255.0f;
 			}
 			else //Desert
 			{
-				terrainVertices[i * 6 + 3] = 1.0f;
-				terrainVertices[i * 6 + 4] = 1.0f;
-				terrainVertices[i * 6 + 5] = 0.5f;
+				terrainVertices[i * 6 + 3] = 36.0f / 255.0f;
+				terrainVertices[i * 6 + 4] = 66.0f / 255.0f;
+				terrainVertices[i * 6 + 5] = 23.0f / 255.0f;
 			}
 
 			i++;
