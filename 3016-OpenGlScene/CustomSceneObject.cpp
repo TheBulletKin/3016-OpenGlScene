@@ -115,12 +115,12 @@ void CustomSceneObject::DrawMesh() {
 		glBindVertexArray(VAO);
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error: " << error << endl;
+			cerr << "OpenGL error after custom object VAO bind: " << error << endl;
 		}
 		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
-			cerr << "OpenGL error: " << error << endl;
+			cerr << "OpenGL error after custom object draw: " << error << endl;
 		}
 	}
 }

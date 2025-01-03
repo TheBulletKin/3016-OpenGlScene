@@ -120,7 +120,7 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 		//Generates a textureID for this texture
 		glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		//glBindTexture(GL_TEXTURE_2D, baseTextureUnit);
+		
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
