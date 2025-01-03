@@ -27,6 +27,15 @@
 #include "FastNoiseLite.h"
 
 
+
+/* TODO
+* Physics projectil objects done
+* Figure out random location and trajectory spawning
+* Make control variables so I can control the speed, dispersion and launch angle easily
+
+
+*/
+
 using namespace glm;
 using namespace std;
 using namespace irrklang;
@@ -67,8 +76,6 @@ map<string, CustomSceneObject*> sceneObjectDictionary;
 
 vector<ArcingProjectileObject*> projectileObjects;
 map<ArcingProjectileObject*, ISound*> bubbleSounds;
-int maxBubbles = 10;
-int currentBubbles = 0;
 
 //--- Sphere object constants
 const float sphereRadius = 1.2f;
@@ -612,7 +619,7 @@ int main()
 
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
-	texNameToUnitNo["treeTexture"] = 7;
+	texNameToUnitNo["treeTexture"] = 2;
 
 	Model treeModel("Media/Tree/Tree.obj", texNameToUnitNo["treeTexture"]);
 
@@ -661,42 +668,29 @@ int main()
 		treeModelMatrices[i] = model;
 	}
 
-	
 	unsigned int instanceBuffer;
 	glGenBuffers(1, &instanceBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glBufferData(GL_ARRAY_BUFFER, numberOfTrees * sizeof(mat4), &treeModelMatrices[0], GL_STATIC_DRAW);
-	
+
 	unsigned int treeVAO = treeModel.meshes[0].VAO;
 	glBindVertexArray(treeVAO);
 	// set attribute pointers for matrix (4 times vec4)
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
 	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
-	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
-	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
-	
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
+
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-	glVertexAttribDivisor(7, 1);
-	glVertexAttribDivisor(8, 1);
-	
 
 	glBindVertexArray(0);
-
-	//Temporary
-	modelShader.Use();
-	modelShader.setVec3("lightPos", vec3(5.0f, 3.0f, -7.0f));
-	modelShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	modelShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
-	modelShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-	//TexturedObjectShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-	modelShader.setFloat("light.constant", 1.0f);
-	modelShader.setFloat("light.linear", 0.09f);
-	modelShader.setFloat("light.quadratic", 0.032f);
 
 	GLenum error;
 	while ((error = glGetError()) != GL_NO_ERROR) {
@@ -750,9 +744,6 @@ int main()
 		mat4 view = camera.GetViewMatrix();
 		TexturedObjectShader.setMat4("view", view);
 
-		modelShader.Use();
-		modelShader.setVec3("viewPos", camera.Position);
-
 		//-----------------------------------
 		// Multiple lights
 		lightNoiseTextureCurrentIndex = (int)(currentFrame * 0.035f * lightNoiseTextureLength) % lightNoiseTextureLength;
@@ -773,7 +764,6 @@ int main()
 	// directional light
 		vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
 		vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
-		TexturedObjectShader.Use();
 		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
 		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
@@ -875,7 +865,6 @@ int main()
 			modelShader.setMat4("model", lampTransform);
 			modelShader.setMat4("projection", projection);
 			modelShader.setMat4("view", view);
-			modelShader.setBool("hasNormals", false);
 
 
 			lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
@@ -885,7 +874,7 @@ int main()
 
 		//-- Projectile spawning
 		projectileSpawnTimer += deltaTime;
-		if (projectileSpawnTimer >= projectileSpawnCooldown && currentBubbles < maxBubbles)
+		if (projectileSpawnTimer >= projectileSpawnCooldown)
 		{
 			ArcingProjectileObject* newProjectileObject = new ArcingProjectileObject();
 			//newProjectileObject->VAO = sceneObjectDictionary["Projectile Base"]->VAO;
@@ -958,7 +947,7 @@ int main()
 				bubbleSounds[newProjectileObject] = sound;
 			}
 
-			currentBubbles++;
+
 
 			//Random spawn cooldown
 			float cooldownMin = 2.0f;
@@ -979,7 +968,7 @@ int main()
 					bubbleSounds.erase(projectileObject);
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
-					currentBubbles--;
+
 				}
 				else {
 					mat4 projectileModel = mat4(1.0f);
@@ -1114,14 +1103,13 @@ int main()
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
 		modelShader.setBool("useInstancing", true);
-		modelShader.setBool("hasNormals", true);
 
 		glBindVertexArray(treeModel.meshes[0].VAO);
 
 		GLuint currentTexture;
 		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
 		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
-		
+		modelShader.setInt(("texture_diffuse1"), texNameToUnitNo["treeTexture"]);
 		//unit 2 id 4
 		//wall is unit 3 id 5
 		//lamp is unit 4 id 6		
@@ -1138,7 +1126,6 @@ int main()
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
 		modelShader.setBool("useInstancing", false);
-		modelShader.setBool("hasNormals", true);
 
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
@@ -1200,7 +1187,6 @@ int main()
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
 		modelShader.setBool("useInstancing", false);
-		modelShader.setBool("hasNormals", false);
 
 
 		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);

@@ -17,16 +17,9 @@ using namespace glm;
 using namespace std;
 
 struct Vertex {
-    // position
-    glm::vec3 Position;
-    // normal
-    glm::vec3 Normal;
-    // texCoords
-    glm::vec2 TexCoords;
-    // tangent
-    glm::vec3 Tangent;
-    // bitangent
-    glm::vec3 Bitangent;
+    vec3 Position;
+    vec3 Normal;
+    vec2 TexCoords;
 };
 
 struct Texture {

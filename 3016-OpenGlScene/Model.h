@@ -25,11 +25,10 @@ public:
     //TEMPORARY
     vector<Mesh> meshes;
     vector<Texture> textures_loaded;
-    string directory;
 private:
     // model data
    // vector<Mesh> meshes;
- 
+    string directory;
 
     void loadModel(string path, unsigned int baseTextureUnit);
     void processNode(aiNode* node, const aiScene* scene, unsigned int baseTextureUnit);
