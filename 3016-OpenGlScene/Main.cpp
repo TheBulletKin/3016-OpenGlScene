@@ -100,6 +100,7 @@ uniform_real_distribution<> dis(0.0, 1.0);
 bool isPlayingBackgroundAudio = true;
 ISoundEngine* audioEngine;
 ISound* backgroundSound;
+bool spacePressed = false;
 #pragma endregion Globals and settings
 
 
@@ -178,6 +179,7 @@ int main()
 
 #pragma region Audio Setup
 	//---- Audio
+
 	audioEngine = createIrrKlangDevice();
 	backgroundSound = audioEngine->play2D("Media/Audio/mysterious-ambient-suspense-atmosphere-252023.mp3", true, false, true);
 	if (backgroundSound)
@@ -351,14 +353,13 @@ int main()
 	sphereShader.Use();
 	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 	sphereShader.setVec3("lightColor", vec3(1.0f, 1.0f, 1.0f));
-	sphereShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
-	sphereShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
+
 	sphereShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-	sphereShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-	sphereShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	sphereShader.setVec3("material.diffuse", 85.0f / 255.0f, 140.0f / 255.0f, 158.0f / 255.0f);
+	sphereShader.setVec3("material.specular", 0.8f, 0.8f, 0.8f);
 	sphereShader.setFloat("material.shininess", 32.0f);
-	sphereShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	sphereShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	sphereShader.setVec3("light.ambient", 1.0f, 1.0f, 1.0f);
+	sphereShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f); // darken diffuse light a bit
 	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 	// -----------------------
@@ -387,7 +388,7 @@ int main()
 	TexturedObjectShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 	TexturedObjectShader.setFloat("material.shininess", 32.0f);
 	TexturedObjectShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); 
+	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	TexturedObjectShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 	//TexturedObjectShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
 	TexturedObjectShader.setFloat("light.constant", 1.0f);
@@ -396,6 +397,7 @@ int main()
 	TexturedObjectShader.setVec3("light.position", camera.Position);
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
+
 #pragma endregion
 
 
@@ -616,7 +618,7 @@ int main()
 	modelShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 	modelShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	modelShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-	
+
 	modelShader.setFloat("light.constant", 1.0f);
 	modelShader.setFloat("light.linear", 0.09f);
 	modelShader.setFloat("light.quadratic", 0.032f);
@@ -785,8 +787,8 @@ int main()
 			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light->quadratic);
 			pointLightIndex++;
 		}
-		
-		
+
+
 		for (PointLight* light : dynamicPointLights) {
 			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
 			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light->position);
@@ -821,7 +823,7 @@ int main()
 		modelShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		// pointLights
 		pointLightIndex = 0;
-		
+
 		for (PointLight* light : staticPointLights) {
 			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
 			modelShader.setVec3(pointLightUniformTag + ".position", light->position);
@@ -902,7 +904,7 @@ int main()
 		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 
 		TexturedObjectShader.Use();
-		
+
 		TexturedObjectShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
@@ -1012,10 +1014,10 @@ int main()
 				lightColour,
 				lightColour
 			);
-		
+
 
 			dynamicBubbleLights[newProjectileObject] = newLight;
-				
+
 			dynamicPointLights.push_back(newLight);
 
 			currentBubbles++;
@@ -1046,7 +1048,7 @@ int main()
 					PointLight* objectLight = dynamicBubbleLights[projectileObject];
 					dynamicPointLights.erase(remove(dynamicPointLights.begin(), dynamicPointLights.end(), objectLight), dynamicPointLights.end());
 					delete objectLight;
-					
+
 					dynamicBubbleLights.erase(projectileObject);
 
 					sphereShader.Use();
@@ -1055,7 +1057,7 @@ int main()
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
 					currentBubbles--;
-					
+
 
 				}
 				else {
@@ -1077,7 +1079,7 @@ int main()
 
 
 
-					
+
 					bubbleSounds[projectileObject]->setPosition(vec3df(projectileObject->currentPosition.x, projectileObject->currentPosition.y, projectileObject->currentPosition.z));
 
 					dynamicBubbleLights[projectileObject]->position = projectileObject->currentPosition;
@@ -1108,7 +1110,7 @@ int main()
 		//Terrain
 		mat4 terrainModel = mat4(1.0f);
 		terrainModel = translate(terrainModel, vec3(15.0f, 0.0f, 45.0f));
-		
+
 		//Looking straight forward
 		terrainModel = rotate(terrainModel, radians(0.0f), vec3(1.0f, 0.0f, 0.0f));
 		//Elevation to look upon terrain
@@ -1124,7 +1126,7 @@ int main()
 
 #pragma region Single Sphere Render
 		mat4 sphereModel = mat4(1.0f);
-		sphereModel = translate(sphereModel, vec3(8.0f, 0.0f, -12.0f));
+		sphereModel = translate(sphereModel, vec3(8.0f, 2.0f, -12.0f));
 
 		sphereShader.Use();
 
@@ -1133,7 +1135,7 @@ int main()
 		sphereShader.setFloat("displacementScale", 0.4f);
 		sphereShader.setInt("firstNoiseTexture", texNameToUnitNo["firstNoiseTexture"]);
 		sphereShader.setInt("secondNoiseTexture", texNameToUnitNo["secondNoiseTexture"]);
-		
+
 
 
 		sceneObjectDictionary["Sphere Object"]->DrawMesh();
@@ -1288,11 +1290,35 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		if (isPlayingBackgroundAudio)
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		if (!spacePressed)
 		{
-
+			spacePressed = true;
+			if (backgroundSound != nullptr)
+			{
+				backgroundSound->stop();
+				backgroundSound->drop();
+				backgroundSound = nullptr;
+				cout << "Sound stopped" << endl;
+			}
 		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		if (backgroundSound == nullptr)
+		{
+			backgroundSound = audioEngine->play2D("Media/Audio/mysterious-ambient-suspense-atmosphere-252023.mp3", true, false, true);
+			if (backgroundSound)
+			{
+				backgroundSound->setVolume(0.04f);
+			}
+			spacePressed = false;
+		}
+		
+			
+	
+
+
+
 	}
 }
 
@@ -1520,7 +1546,7 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 
 			if (biomeValue <= -0.75f) //Plains
 			{
-			
+
 				terrainVertices[i * 6 + 3] = 82.0f / 255.0f;
 				terrainVertices[i * 6 + 4] = 37.0f / 255.0f;
 				terrainVertices[i * 6 + 5] = 24.0f / 255.0f;
