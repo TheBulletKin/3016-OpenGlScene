@@ -115,6 +115,17 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, unsigned int baseTex
 	std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", baseTextureUnit);
 	textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
+	/*
+	if (mesh->mMaterialIndex >= 0)
+	{
+		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+		vector<Texture> diffuseMaps = loadMaterialTextures(material,
+			aiTextureType_DIFFUSE, "texture_diffuse", baseTextureUnit);
+		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+		vector<Texture> specularMaps = loadMaterialTextures(material,
+			aiTextureType_SPECULAR, "texture_specular", baseTextureUnit);
+		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+	}*/
 
 	return Mesh(vertices, indices, textures, baseTextureUnit);
 }
@@ -175,7 +186,6 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 		bool skip = false;
 		for (unsigned int j = 0; j < textures_loaded.size(); j++)
 		{
-			//If the loaded textures already contains the one to load, just set the material texture to that to avoid making new ones each time
 			if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
 			{
 				textures.push_back(textures_loaded[j]);

@@ -40,15 +40,15 @@ in VS_OUT {
 
 uniform bool hasNormals;
 
-uniform sampler2D texture_diffuse0;
-uniform sampler2D texture_normal0;
+uniform sampler2D texture_diffuse1;
+uniform sampler2D texture_normal1;
 
 void main()
 {    
     //FragColor = texture(texture_diffuse1, TexCoords);
     vec3 normal;
     // get diffuse color
-    vec3 color = texture(texture_diffuse0, fs_in.TexCoords).rgb;
+    vec3 color = texture(texture_diffuse1, fs_in.TexCoords).rgb;
     // ambient
     
     vec3 lightDir;
@@ -56,7 +56,7 @@ void main()
     vec3 viewDir;
     if(hasNormals){
         // obtain normal from normal map in range [0,1]
-        normal = texture(texture_normal0, fs_in.TexCoords).rgb;
+        normal = texture(texture_normal1, fs_in.TexCoords).rgb;
         // transform normal vector to range [-1,1]
         normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
     
