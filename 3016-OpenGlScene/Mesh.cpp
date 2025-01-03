@@ -34,14 +34,14 @@ void Mesh::setupMesh(unsigned int baseTextureUnit)
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
 	// vertex tangent
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
 	// vertex bitangent
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 
-	
-	glActiveTexture(GL_TEXTURE0 + baseTextureUnit + 1);
+
+	glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
 	glBindTexture(GL_TEXTURE_2D, textures[0].id);
 
 	glBindVertexArray(0);
@@ -58,8 +58,7 @@ void Mesh::Draw(Shader& shader, unsigned int baseTextureUnit)
 		// glActiveTexture(GL_TEXTURE0 + baseTextureUnit + i); // activate proper texture unit before binding
 		 // retrieve texture number (the N in diffuse_textureN)
 		string number;
-		string name = "texture_diffuse";
-		//string name = textures[i].type;
+		string name = textures[i].type;
 		if (name == "texture_diffuse") {
 			number = to_string(diffuseNr++);
 		}
@@ -74,7 +73,7 @@ void Mesh::Draw(Shader& shader, unsigned int baseTextureUnit)
 
 		//Make sure the base texture unit passed in has a gap of two for the diffuse and normal for the trees
 		shader.setInt((name + number).c_str(), i);
-		glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
+		glActiveTexture(GL_TEXTURE0 + baseTextureUnit + i);
 	    glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 	//shader.setInt(("texture_diffuse1"), baseTextureUnit);

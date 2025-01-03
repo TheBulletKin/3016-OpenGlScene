@@ -180,20 +180,4 @@
 	Add a new attribute struct
 		Length
 		Type
-
-	Got the new attribute loading thing done. Now go look at the mesh and model classes in the learnGL thing. Next job is to fix textures.
-	For now just assume each model only has one mesh
 	*/
-
-/* Texture fixing
-* Keep models separate to custom objects for the time being.
-* Create a new type for textures
-* 
-* Have a vector of textures
-* Only worry about single textures for the time being
-* When I load a texture pass in the loaded textures vector. 
-* Find the texture unit that hasn't been used yet. Set that to the active and bind it.
-* Create a new texture and add it to the loaded textures vector
-* Now loads the texture into this container when I read it manually
-
-*/

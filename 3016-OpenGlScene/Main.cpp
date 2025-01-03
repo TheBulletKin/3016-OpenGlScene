@@ -26,7 +26,6 @@
 
 #include "FastNoiseLite.h"
 #include "VertAttributeHolder.h"
-#include "ModelData.h"
 
 
 using namespace glm;
@@ -101,7 +100,7 @@ uniform_real_distribution<> dis(0.0, 1.0);
 //--- Other methods
 void processInput(GLFWwindow* window);
 void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<VertAttribute> vertAttributes, int vertexAttributeCount);
-void LoadTexture(unsigned int& textureId, const char* filePath, vector<Texture>& loadedTextures, string name);
+void LoadTexture(unsigned int& textureId, const char* filePath);
 void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
 void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]);
 
@@ -128,7 +127,7 @@ int maxPointLights = 8;
 vector<PointLight> staticPointLights;
 vector<PointLight> dynamicPointLights;
 
-vector<Texture> loadedTextures;
+
 
 int main()
 {
@@ -350,13 +349,15 @@ int main()
 	// --------------------------------------------
 	unsigned int containerTextureId;
 
-	LoadTexture(containerTextureId, "Media/container.jpg", loadedTextures, "container");
+	LoadTexture(containerTextureId, "Media/container.jpg");
 
 
-	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, containerTextureId);
 
 
-	
+	texNameToId["container"] = containerTextureId;
+	texNameToUnitNo["container"] = 0;
 
 
 	//--- Coordinate space and 3D
@@ -854,11 +855,6 @@ int main()
 		
 		NewShader.setMat4("model", planeModel);
 		NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(planeModel))));
-		NewShader.setBool("useVertexColours", false);
-		NewShader.setBool("useTexCoords", true);
-		NewShader.setBool("useInstancing", false);
-		NewShader.setBool("useNormalMap", false);
-		NewShader.setBool("useTexture", false);
 		NewShader.setBool("hasNormals", false);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
@@ -1094,31 +1090,26 @@ int main()
 		// ---------------------
 		// Instanced tree rendering
 
-		NewShader.Use();
+		//modelShader.Use();
 
-		mat4 treeModelBase = mat4(1.0f);
-		NewShader.setMat4("model", treeModelBase);
-		NewShader.setMat4("projection", projection);
-		NewShader.setMat4("view", view);		
+		//mat4 treeModelBase = mat4(1.0f);
+		//modelShader.setMat4("model", treeModelBase);
+		//modelShader.setMat4("projection", projection);
+		//modelShader.setMat4("view", view);
+		//modelShader.setBool("useInstancing", true);
+		//modelShader.setBool("hasNormals", true);
 
-		NewShader.setBool("useVertexColours", false);
-		NewShader.setBool("useTexCoords", true);
-		NewShader.setBool("useInstancing", true);
-		NewShader.setBool("useNormalMap", true);
-		NewShader.setBool("useTexture", true);
-		NewShader.setBool("hasNormals", true);
+		//glBindVertexArray(treeModel.meshes[0].VAO);
 
-		glBindVertexArray(treeModel.meshes[0].VAO);
-
-		GLuint currentTexture;
-		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
-		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
+		//GLuint currentTexture;
+		//glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
+		//glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
 
 		//unit 2 id 4
 		//wall is unit 3 id 5
 		//lamp is unit 4 id 6		
-		glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
-		glBindVertexArray(0);
+		//glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
+		//glBindVertexArray(0);
 
 
 
@@ -1304,7 +1295,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 /// <param name="verticesCount">Total number of vertices</param>
 /// <param name="indices">Vertices array, will be passed in as pointer</param>
 /// <param name="indicesCount">Total number of indices in array</param>
-/// <param name="vertAttributes">Vector holding all attributes. The shader this object uses must have its layout values set to the same as the values of the enums</param>
+/// <param name="sectionSizes">Vector listing the sizes of each attribute section in sequence</param>
 /// <param name="vertexAttributeCount">Number of floats per vertex</param>
 void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<VertAttribute> vertAttributes, int vertexAttributeCount) {
 	CustomSceneObject* newObject = new CustomSceneObject();
@@ -1324,29 +1315,9 @@ void CreateObject(string name, float vertices[], int verticesElementCount, unsig
 	sceneObjectDictionary[name] = newObject;
 }
 
-void LoadTexture(unsigned int& textureId, const char* filePath, vector<Texture>& loadedTextures, string name) {
-	int highestUnitNo = 0;
-	for ( Texture& texture : loadedTextures)
-	{
-		if (texture.heldUnit > highestUnitNo)
-		{
-			highestUnitNo = texture.heldUnit;
-		}
-	}
-	
+void LoadTexture(unsigned int& textureId, const char* filePath) {
 	glGenTextures(1, &textureId);
-	glActiveTexture(highestUnitNo);
 	glBindTexture(GL_TEXTURE_2D, textureId);
-
-	Texture newTexture{
-		name,
-		textureId,
-		highestUnitNo,
-		TextureType::DIFFUSE,
-		filePath
-	};
-
-	loadedTextures.push_back(newTexture);
 
 	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
