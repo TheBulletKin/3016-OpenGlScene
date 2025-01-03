@@ -25,8 +25,6 @@ uniform mat4 view;
 uniform mat4 projection;
 //= mat3(transpose(inverse(model)))
 uniform mat3 inverseModelMat;
-uniform vec3 lightPos;
-uniform vec3 viewPos;
 
 //bools
 uniform bool useVertexColours;

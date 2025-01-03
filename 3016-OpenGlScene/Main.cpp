@@ -748,29 +748,44 @@ int main()
 	*/
 	// directional light
 
-
-
 		TexturedObjectShader.Use();
 		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
 		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-		
-		int pointLightIndex = 0;
-		string pointLightUniformTag;
-		for (PointLight light : staticPointLights) {
-			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", light.ambient);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".diffuse", light.diffuse);
-			TexturedObjectShader.setVec3(pointLightUniformTag + ".specular", light.specular);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".constant", light.constant);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".linear", light.linear);
-			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
-			pointLightIndex++;
-		}
-		
-		
+		// point light 1
+
+		TexturedObjectShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+		TexturedObjectShader.setVec3("pointLights[0].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[0].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[0].specular", lightColour.x, lightColour.y, lightColour.z);
+		TexturedObjectShader.setFloat("pointLights[0].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[0].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
+		// point light 2
+		TexturedObjectShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+		TexturedObjectShader.setVec3("pointLights[1].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[1].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[1].specular", lightColour.x, lightColour.y, lightColour.z);
+		TexturedObjectShader.setFloat("pointLights[1].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[1].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
+		// point light 3
+		TexturedObjectShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+		TexturedObjectShader.setVec3("pointLights[2].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[2].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[2].specular", lightColour.x, lightColour.y, lightColour.z);
+		TexturedObjectShader.setFloat("pointLights[2].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[2].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
+		// point light 4
+		TexturedObjectShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+		TexturedObjectShader.setVec3("pointLights[3].ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("pointLights[3].diffuse", lightColour);
+		TexturedObjectShader.setVec3("pointLights[3].specular", lightColour.x, lightColour.y, lightColour.z);
+		TexturedObjectShader.setFloat("pointLights[3].constant", 1.0f);
+		TexturedObjectShader.setFloat("pointLights[3].linear", 0.09f);
+		TexturedObjectShader.setFloat("pointLights[3].quadratic", 0.032f);
 		// spotLight
 		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
 		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
