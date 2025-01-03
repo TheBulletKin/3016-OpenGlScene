@@ -55,20 +55,20 @@ in VS_OUT {
 	vec2 TexCoord;
 	vec3 Normal;
 	vec3 ColourFrag;
-	vec3 Tangent;
+	//vec3 Tangent;
 } fs_in;
 
-vec3 TangentLightPos;
-vec3 TangentViewPos;
-vec3 TangentFragPos;
+//vec3 TangentLightPos;
+//vec3 TangentViewPos;
+//vec3 TangentFragPos;
 
 //bools
 uniform bool useVertexColours;
-uniform bool useTexCoords;
+
 uniform bool useInstancing;
 uniform bool useNormalMap;
-uniform bool useTexture;
-uniform bool hasNormals;
+
+
 uniform int numberOfPointLights;
 
 //Texture samplers (assign correct texture unit on cpu)
@@ -97,44 +97,15 @@ void main()
 	 
 
     vec3 colour;
-    if(useTexture == true && useVertexColours == false)
-    {
-        colour = texture(texture_diffuse, fs_in.TexCoord).rgb;
-    }
-    else if(useTexture == false && useVertexColours == true)
-    {
-        colour = fs_in.ColourFrag;
-    }
-    else if (useTexture == false && useVertexColours == false)
-    {
-        colour = material.diffuse;
-    }
+     colour = texture(texture_diffuse, fs_in.TexCoord).rgb;
+    
+    
 
     
     vec3 normal = normalize(fs_in.Normal);
     
     vec3 viewDir = normalize(viewPos - fs_in.FragPos);
     
-    /* Commenting out normal map stuff to tackle later
-    if(useNormalMap){ //Has a normal map to sample from
-        // obtain normal from normal map in range [0,1]
-        normal = texture(texture_normal, fs_in.TexCoord).rgb;
-        // transform normal vector to range [-1,1]
-        normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
-
-        vec3 T = normalize(inverseModelMat * fs_in.Tangent);
-        vec3 N = normalize(inverseModelMat * fs_in.Normal);
-        T = normalize(T - dot(T, N) * N);
-   	    vec3 B = cross(N, T);
-	    TBN = transpose(mat3(T, B, N));    
-
-        normal = normalize(TBN * normal);
-    
-        TangentViewPos  = TBN * viewPos;
-        TangentFragPos  = TBN * fs_in.FragPos;
-
-        viewDir = normalize(TangentViewPos - TangentFragPos);
-    } */
     
 
     

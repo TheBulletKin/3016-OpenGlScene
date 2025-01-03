@@ -274,11 +274,11 @@ int main()
 	// Ground plane creation
 	// ----------------------------------------------
 	float planeVertices[] = {
-		//Positions             //Textures
-		0.5f, 0.5f, 0.0f,       1.0f, 1.0f, //top right
-		0.5f, -0.5f, 0.0f,      1.0f, 0.0f, //bottom right
-		-0.5f, -0.5f, 0.0f,     0.0f, 0.0f, //bottom left
-		-0.5f, 0.5f, 0.0f,      0.0f, 1.0f  //top left
+		// Positions            // Textures   // Normals
+		 0.5f,  0.5f,  0.0f,     1.0f, 1.0f,   0.0f, 0.0f, 1.0f, // top right
+		 0.5f, -0.5f,  0.0f,     1.0f, 0.0f,   0.0f, 0.0f, 1.0f, // bottom right
+		-0.5f, -0.5f,  0.0f,     0.0f, 0.0f,   0.0f, 0.0f, 1.0f, // bottom left
+		-0.5f,  0.5f,  0.0f,     0.0f, 1.0f,   0.0f, 0.0f, 1.0f  // top left
 	};
 
 	unsigned int planeIndices[] = {
@@ -286,13 +286,14 @@ int main()
 		1, 2, 3  //Second triangle
 	};
 
-	int planeAttributeSize = 5;
+	int planeAttributeSize = 8;
 	
 
 	vector<VertAttribute> planeAttributes =
 	{
-		{3, VertAttributeTypes::POSITION},
-		{2, VertAttributeTypes::TEXCOORD}
+		{3, VertAttributeTypes::POSITION},	
+		{2, VertAttributeTypes::TEXCOORD},
+		{3, VertAttributeTypes::NORMAL}
 	};
 
 	int planeVerticesCount = sizeof(planeVertices) / sizeof(planeVertices[0]) * planeAttributeSize;
@@ -317,6 +318,11 @@ int main()
 	// --------------------------------------------
 	// Shader creation
 	// --------------------------------------------
+
+
+
+
+
 	Shader TexturedObjectShader("Shaders/VertexShader.v", "Shaders/FragmentShader.f");
 	TexturedObjectShader.Use();
 	//The texture sampler on the fragment shader is given value '0' now, means later on in the render loop it will use texture unit zero
@@ -330,17 +336,7 @@ int main()
 	TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 	TexturedObjectShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 	TexturedObjectShader.setFloat("material.shininess", 32.0f);
-	TexturedObjectShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	TexturedObjectShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
-	TexturedObjectShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-	//TexturedObjectShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-	TexturedObjectShader.setFloat("light.constant", 1.0f);
-	TexturedObjectShader.setFloat("light.linear", 0.09f);
-	TexturedObjectShader.setFloat("light.quadratic", 0.032f);
-	TexturedObjectShader.setVec3("light.position", camera.Position);
-	TexturedObjectShader.setVec3("light.direction", camera.Front);
-	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
-
+	
 	
 	
 	// --------------------------------------------
@@ -351,7 +347,7 @@ int main()
 	LoadTexture(containerTextureId, "Media/container.jpg", loadedTextures, "container");
 	
 
-	
+	TexturedObjectShader.setInt("texture1", 0);
 
 
 	
@@ -389,9 +385,10 @@ int main()
 
 	float terrainVertices[MAP_SIZE][6];
 	int terrainVerticesCount = sizeof(terrainVertices) / sizeof(terrainVertices[0]);
+	GLenum error;
 	
 	CreateProceduralTerrain(&terrainVertices[0][0], terrainVerticesCount);
-
+	
 
 
 
@@ -426,7 +423,7 @@ int main()
 	
 
 	CreateSphereObject(sphereVertices, sphereIndices);
-
+	
 	Shader sphereShader("Shaders/SphereVertexShader.v", "Shaders/SphereFragmentShader.f");
 
 	sphereShader.Use();
@@ -442,7 +439,9 @@ int main()
 	sphereShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 
 
 	// ----------------------------------------
@@ -475,7 +474,9 @@ int main()
 		staticPointLights.push_back(newLight);
 	}
 
-	
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	vec3 lightPos(5.0f, 7.0f, -2.0f);
 	mat4 lightModel = mat4(1.0f);
 	lightModel = translate(lightModel, lightPos);
@@ -488,7 +489,9 @@ int main()
 	sphereShader.setVec3("lightPos", lightPos);
 	sphereShader.setBool("flatShading", false);
 
-	
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	//-------------
 	// Light colour variation texture
 	FastNoiseLite lightColourNoiseGenerator;
@@ -511,8 +514,10 @@ int main()
 
 	//----------------------------
 	// TEMPORARY
-
-	Shader NewShader("Shaders/NewVertexShader.v", "Shaders/NewFragmentShader.f");
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
+	
 
 
 	// ----------------------------------
@@ -540,7 +545,9 @@ int main()
 			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;
 		}
 	}
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	unsigned int firstNoiseTexture;
 	glGenTextures(1, &firstNoiseTexture);
 
@@ -555,14 +562,14 @@ int main()
 	}
 	for (Texture& texture : loadedTextures)
 	{
-		if (texture.heldUnit >= highestUnitNo)
+		if (texture.heldUnit > highestUnitNo)
 		{
 			highestUnitNo = texture.heldUnit;
 		}
 
 	}
 
-
+	
 
 	Texture firstSphereTexture{
 		"FirstNoiseTexture",
@@ -575,22 +582,26 @@ int main()
 
 	loadedTextures.push_back(firstSphereTexture);
 	
-	glActiveTexture(GL_TEXTURE0 + highestUnitNo + 1);
-	glBindTexture(GL_TEXTURE_2D, firstNoiseTexture);
+	glActiveTexture(GL_TEXTURE0 + firstSphereTexture.heldUnit);
+	glBindTexture(GL_TEXTURE_2D, firstSphereTexture.id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	sphereShader.Use();
 	sphereShader.setInt("firstNoiseTexture", firstSphereTexture.heldUnit);
 
 	sphereNoiseGenerator.SetFrequency(0.01f);
 
 	noiseScale = 0.35f;
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	for (int y = 0; y < noiseHeight; ++y) {
 		for (int x = 0; x < noiseWidth; ++x) {
 			int index = y * noiseWidth + x;
@@ -602,20 +613,19 @@ int main()
 			noiseData[index] = (sphereNoiseGenerator.GetNoise(scaledX, scaledY) + 1.0f) * 0.5f;
 		}
 	}
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	unsigned int secondNoiseTexture;
 	glGenTextures(1, &secondNoiseTexture);
 
 
 	highestUnitNo = 0;
 
-	if (loadedTextures.empty())
-	{
-		highestUnitNo = -1;
-	}
+	
 	for (Texture& texture : loadedTextures)
 	{
-		if (texture.heldUnit >= highestUnitNo)
+		if (texture.heldUnit > highestUnitNo)
 		{
 			highestUnitNo = texture.heldUnit;
 		}
@@ -634,18 +644,24 @@ int main()
 	};
 
 	loadedTextures.push_back(secondSphereTexture);
-
-	glActiveTexture(GL_TEXTURE0 + highestUnitNo + 1);
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
+	glActiveTexture(GL_TEXTURE0 + secondSphereTexture.heldUnit);
 	glBindTexture(GL_TEXTURE_2D, secondNoiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	sphereShader.Use();
 	sphereShader.setInt("secondNoiseTexture", secondSphereTexture.heldUnit);
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 
 	// ----------------------------------
 	// Model importing
@@ -653,17 +669,23 @@ int main()
 	
 	//Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
-	
+	Shader NewShader("Shaders/NewVertexShader.v", "Shaders/NewFragmentShader.f");
+	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
+
 
 	Model treeModel("Media/Tree/Tree.obj", "TreeModel", loadedTextures);
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 
 	
 	Model wallModel("Media/Wall/Wall.fbx", "WallModel", loadedTextures);
 
 	
 	Model lampModel("Media/Lamp/lamp.obj", "LampModel", loadedTextures);
-
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	// -----------------------------------
 	// Tree position generation
 	// ----------------------------------
@@ -681,7 +703,7 @@ int main()
 
 	int numberOfTrees = 80;
 
-
+	
 	//Pre compute the instanced matrices on the cpu
 	mat4* treeModelMatrices;
 	treeModelMatrices = new mat4[numberOfTrees];
@@ -710,27 +732,30 @@ int main()
 	glGenBuffers(1, &instanceBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glBufferData(GL_ARRAY_BUFFER, numberOfTrees * sizeof(mat4), &treeModelMatrices[0], GL_STATIC_DRAW);
-
+	error;
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		cerr << "OpenGL error after tree instancing setup: " << error << endl;
+	}
 	unsigned int treeVAO = treeModel.meshes[0].VAO;
 	glBindVertexArray(treeVAO);
 	// set attribute pointers for matrix (4 times vec4)
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
-	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
-	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
-	glEnableVertexAttribArray(9);
-	glVertexAttribPointer(9, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
 
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-	glVertexAttribDivisor(7, 1);
-	glVertexAttribDivisor(8, 1);
-	glVertexAttribDivisor(9, 1);
 
 
 	glBindVertexArray(0);
-	/*
+	
 	//Temporary
 	modelShader.Use();
 	modelShader.setVec3("lightPos", vec3(5.0f, 3.0f, -7.0f));
@@ -742,10 +767,10 @@ int main()
 	modelShader.setFloat("light.linear", 0.09f);
 	modelShader.setFloat("light.quadratic", 0.032f);
 
-	GLenum error;
+	error;
 	while ((error = glGetError()) != GL_NO_ERROR) {
 		cerr << "OpenGL error after tree instancing setup: " << error << endl;
-	}*/
+	}
 
 
 
@@ -873,6 +898,58 @@ int main()
 		NewShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 
+		TexturedObjectShader.Use();
+
+
+		TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
+		TexturedObjectShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
+		TexturedObjectShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		TexturedObjectShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		TexturedObjectShader.setFloat("material.shininess", 32.0f);
+
+		
+		TexturedObjectShader.setBool("useInstancing", false);
+		TexturedObjectShader.setBool("useNormalMap", false);
+		TexturedObjectShader.setBool("useTexture", false);
+		
+
+		//TexturedObjectShader.Use();
+		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
+		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+
+		pointLightIndex = 0;
+		
+		for (PointLight light : staticPointLights) {
+			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", light.ambient);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".diffuse", light.diffuse);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".specular", light.specular);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".constant", light.constant);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".linear", light.linear);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
+			pointLightIndex++;
+		}
+
+		TexturedObjectShader.setInt("numberOfPointLights", 4);
+
+
+		// spotLight
+		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
+		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
+		TexturedObjectShader.setVec3("spotLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("spotLight.constant", 1.0f);
+		TexturedObjectShader.setFloat("spotLight.linear", 0.09f);
+		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
+		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
 		{
@@ -882,23 +959,13 @@ int main()
 			model = translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
 			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
-			NewShader.setMat4("model", model);
-			NewShader.setMat4("projection", projection);
-			NewShader.setMat4("view", view);
-			NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(model))));
-			//TexturedObjectShader.setVec3("lightPos", lightPos);
-			NewShader.setVec3("viewPos", camera.Position);
-			//TexturedObjectShader.setVec3("light.position", camera.Position);
-			//TexturedObjectShader.setVec3("light.direction", camera.Front);
-			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
-			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-			NewShader.setBool("useVertexColours", false);
-			NewShader.setBool("useTexCoords", true);
-			NewShader.setBool("useInstancing", false);
-			NewShader.setBool("useNormalMap", false);
-			NewShader.setBool("useTexture", false);
-			NewShader.setBool("hasNormals", true);
+			TexturedObjectShader.setMat4("model", model);
+			TexturedObjectShader.setMat4("projection", projection);
+			TexturedObjectShader.setMat4("view", view);
+			
+			TexturedObjectShader.setVec3("viewPos", camera.Position);
+			TexturedObjectShader.setMat3("inverseModelMat", mat3(transpose(inverse(model))));
+			
 			
 
 
@@ -909,23 +976,21 @@ int main()
 
 
 		//--- Render Plane
-		NewShader.Use();
-		mat4 planeModel = mat4(1.0f);
-		planeModel = translate(planeModel, vec3(0.0f, 0.0f, -20.0f));
-		planeModel = scale(planeModel, vec3(90.0f, 1.0f, 50.0f));
-		planeModel = rotate(planeModel, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
-
+		TexturedObjectShader.Use();
+		mat4 model = mat4(1.0f);
 		
-		//NewShader.setMat4("model", planeModel);
-		//NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(planeModel))));
-		//NewShader.setBool("useVertexColours", false);
-		//NewShader.setBool("useTexCoords", true);
-		//NewShader.setBool("useInstancing", false);
-		//NewShader.setBool("useNormalMap", false);
-		//NewShader.setBool("useTexture", false);
-		//NewShader.setBool("hasNormals", false);
+		//model = rotate(model, radians(0.0f), vec3(0.0f, 0.0f, 0.0f));
+		model = translate(model, vec3(0.0f, -3.0f, 0.0f));
+		model = scale(model, vec3(10.0f, 1.0f, 10.0f));
+		
 
-		//sceneObjectDictionary["Plane Object"]->DrawMesh();
+		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		TexturedObjectShader.setMat4("model", model);
+		TexturedObjectShader.setBool("useTexture", false);
+		TexturedObjectShader.setBool("useInstancing", false);
+		
+
+		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -948,6 +1013,7 @@ int main()
 			//lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
 
 			//--- Render Plane
+			/*
 			NewShader.Use();
 			mat4 lampTransform = mat4(1.0f);
 			lampTransform = scale(lampTransform, vec3(0.8f, 0.8f, 0.8f));
@@ -957,14 +1023,25 @@ int main()
 
 			NewShader.setMat4("model", lampTransform);
 			NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(lampTransform))));
-			NewShader.setBool("useVertexColours", false);
-			NewShader.setBool("useTexCoords", true);
+			
 			NewShader.setBool("useInstancing", false);
 			NewShader.setBool("useNormalMap", false);
 			NewShader.setBool("useTexture", true);
 			NewShader.setBool("hasNormals", true);
 
-			lampModel.Draw(NewShader, loadedTextures);
+			lampModel.Draw(NewShader, loadedTextures);*/
+
+			mat4 lampTransform = mat4(1.0f);
+			lampTransform = translate(lampTransform, vec3(lampPos.x, lampPos.y - 0.5f, lampPos.z));
+			lampTransform = scale(lampTransform, vec3(0.2f, 0.2f, 0.2f));
+			modelShader.Use();
+
+			modelShader.setMat4("model", lampTransform);
+			modelShader.setMat4("projection", projection);
+			modelShader.setMat4("view", view);
+
+
+			lampModel.Draw(modelShader, loadedTextures);
 
 		}
 
@@ -1190,6 +1267,11 @@ int main()
 		NewShader.setBool("useTexture", false);
 		NewShader.setBool("hasNormals", false);
 
+		modelShader.Use();
+
+		modelShader.setMat4("model", treeModelBase);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
 		//glBindVertexArray(treeModel.meshes[0].VAO);
 
 		//GLuint currentTexture;
@@ -1201,7 +1283,7 @@ int main()
 		//glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
 		//glBindVertexArray(0);
 
-		treeModel.Draw(NewShader, loadedTextures);
+		treeModel.Draw(modelShader, loadedTextures);
 
 		//Render single tree for testing
 		//modelShader.Use();
@@ -1264,17 +1346,17 @@ int main()
 
 
 		//--- Create wall model
-		//modelShader.Use();
-		//modelLocation = mat4(1.0f);
-		//modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
-		//modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
-		//modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-		//modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
-		//modelShader.setMat4("model", modelLocation);
-		//modelShader.setMat4("projection", projection);
-		//modelShader.setMat4("view", view);
-		//modelShader.setBool("useInstancing", false);
-		//modelShader.setBool("hasNormals", false);
+		NewShader.Use();
+		mat4 modelLocation = mat4(1.0f);
+		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
+		modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
+		NewShader.setMat4("model", modelLocation);
+		NewShader.setMat4("projection", projection);
+		NewShader.setMat4("view", view);
+		NewShader.setBool("useInstancing", false);
+		NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(modelLocation))));
 
 
 		//wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
@@ -1415,7 +1497,7 @@ void LoadTexture(unsigned int& textureId, const char* filePath, vector<Texture>&
 	}
 	for ( Texture& texture : loadedTextures)
 	{
-		if (texture.heldUnit >= highestUnitNo)
+		if (texture.heldUnit > highestUnitNo)
 		{
 			highestUnitNo = texture.heldUnit;
 		}
