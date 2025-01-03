@@ -1,7 +1,7 @@
 #version 330 core
 //Following's location value will be used by the vertex attribute pointer
 layout (location = 0) in vec3 aPos;
-layout (location = 3) in vec3 colourVertex;
+layout (location = 1) in vec3 colourVertex;
 
 //Pass the colour to the fragment shader
 out vec3 colourFrag;

@@ -25,7 +25,6 @@
 #include <irrklang/irrKlang.h>
 
 #include "FastNoiseLite.h"
-#include "VertAttributeHolder.h"
 
 
 using namespace glm;
@@ -99,7 +98,7 @@ uniform_real_distribution<> dis(0.0, 1.0);
 
 //--- Other methods
 void processInput(GLFWwindow* window);
-void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<VertAttribute> vertAttributes, int vertexAttributeCount);
+void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount);
 void LoadTexture(unsigned int& textureId, const char* filePath);
 void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount);
 void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11], unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6]);
@@ -126,8 +125,6 @@ struct PointLight {
 int maxPointLights = 8;
 vector<PointLight> staticPointLights;
 vector<PointLight> dynamicPointLights;
-
-
 
 int main()
 {
@@ -191,40 +188,40 @@ int main()
 	// ---------------------------------------------------
 	float cubeVertices[] = {
 		//Position           //Tex coords  //Normals
-		-0.5f, -0.5f, -0.5f,   0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,   0.0f, 0.0f, -1.0f,1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,    0.0f, 0.0f, -1.0f,1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,   0.0f, 0.0f, -1.0f,1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 0.0f, -1.0f,
-		-0.5f, -0.5f, -0.5f,    0.0f, 0.0f, -1.0f,0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
 
-		-0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,    0.0f, 0.0f, 1.0f,1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 1.0f,1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 1.0f,0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,    0.0f, 0.0f, 1.0f,0.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
 
-		-0.5f,  0.5f,  0.5f,   -1.0f, 0.0f, 0.0f,1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,    -1.0f, 0.0f, 0.0f,1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,   -1.0f, 0.0f, 0.0f,0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,    -1.0f, 0.0f, 0.0f,0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,    -1.0f, 0.0f, 0.0f,0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,   -1.0f, 0.0f, 0.0f,1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
 
-		 0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 0.0f,1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,    1.0f, 0.0f, 0.0f,0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,    1.0f, 0.0f, 0.0f,0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,   1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
 
-		-0.5f, -0.5f, -0.5f,    0.0f, -1.0f, 0.0f,0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,   0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,    0.0f, -1.0f, 0.0f,1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,    0.0f, -1.0f, 0.0f,1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,    0.0f, -1.0f, 0.0f,0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,    0.0f, -1.0f, 0.0f,0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
 
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
 		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
@@ -255,20 +252,13 @@ int main()
 	vector<int> cubeSectionSizes =
 	{
 		3, //Position
-		3, //Normals
 		2, //Tex coords
-	};
-
-	vector<VertAttribute> cubeAttributes =
-	{
-		{3, VertAttributeTypes::POSITION},
-		{3, VertAttributeTypes::NORMAL},
-		{2, VertAttributeTypes::TEXCOORD}
+		3, //Normals
 	};
 
 	int cubeVerticesCount = sizeof(cubeVertices) / (sizeof(cubeVertices[0]) * cubeVertexSize);
 	//int cubeIndicesCount = sizeof(cubeIndices) / sizeof(cubeIndices[0]);
-	CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeAttributes, cubeVertexSize);
+	//CreateObject("Cube Object", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
 
@@ -289,24 +279,22 @@ int main()
 	};
 
 	int planeAttributeSize = 5;
-	
-
-	vector<VertAttribute> planeAttributes =
+	vector<int> planeAttributeSizes =
 	{
-		{3, VertAttributeTypes::POSITION},
-		{2, VertAttributeTypes::TEXCOORD}
+		3, //Position
+		2  //Tex coords
 	};
 
 	int planeVerticesCount = sizeof(planeVertices) / sizeof(planeVertices[0]) * planeAttributeSize;
 	int planeIndicesCount = sizeof(planeIndices) / sizeof(planeIndices[0]);
 
-	CreateObject("Plane Object", planeVertices, planeIndicesCount, planeIndices, planeIndicesCount, planeAttributes, planeAttributeSize);
+	CreateObject("Plane Object", planeVertices, planeIndicesCount, planeIndices, planeIndicesCount, planeAttributeSizes, planeAttributeSize);
 
 
 	// ----------------------------------------------
 	// Projectile cube prefab creation
 	// ----------------------------------------------
-	CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeAttributes, cubeVertexSize);
+	CreateObject("Projectile Base", cubeVertices, cubeVerticesCount, NULL, 0, cubeSectionSizes, cubeVertexSize);
 
 
 	//--- Projectile spawning variables
@@ -512,10 +500,7 @@ int main()
 		lightNoiseValues[i] = lightColourNoiseGenerator.GetNoise((float)i * lightNoiseScale, 0.0f);
 	}
 
-	//----------------------------
-	// TEMPORARY
 
-	Shader NewShader("Shaders/NewVertexShader.v", "Shaders/NewFragmentShader.f");
 
 
 	// ----------------------------------
@@ -599,7 +584,7 @@ int main()
 	// Model importing
 	// ----------------------------------
 
-	//Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
+	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
 	texNameToUnitNo["treeTexture"] = 7;
 
@@ -662,23 +647,23 @@ int main()
 	unsigned int treeVAO = treeModel.meshes[0].VAO;
 	glBindVertexArray(treeVAO);
 	// set attribute pointers for matrix (4 times vec4)
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
 	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
 	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
-	glEnableVertexAttribArray(9);
-	glVertexAttribPointer(9, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
+	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
 
+	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
 	glVertexAttribDivisor(8, 1);
-	glVertexAttribDivisor(9, 1);
 
 
 	glBindVertexArray(0);
-	/*
+
 	//Temporary
 	modelShader.Use();
 	modelShader.setVec3("lightPos", vec3(5.0f, 3.0f, -7.0f));
@@ -693,7 +678,7 @@ int main()
 	GLenum error;
 	while ((error = glGetError()) != GL_NO_ERROR) {
 		cerr << "OpenGL error after tree instancing setup: " << error << endl;
-	}*/
+	}
 
 
 
@@ -741,9 +726,8 @@ int main()
 		mat4 view = camera.GetViewMatrix();
 		TexturedObjectShader.setMat4("view", view);
 
-
-		//modelShader.Use();
-		//modelShader.setVec3("viewPos", camera.Position);
+		modelShader.Use();
+		modelShader.setVec3("viewPos", camera.Position);
 
 		//-----------------------------------
 		// Multiple lights
@@ -765,57 +749,39 @@ int main()
 	// directional light
 
 
-		NewShader.Use();
 
-		
-		NewShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
-		NewShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
-		NewShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-		NewShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-		NewShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-		NewShader.setFloat("material.shininess", 32.0f);
-
-		NewShader.setBool("useVertexColours", false);
-		NewShader.setBool("useTexCoords", true);
-		NewShader.setBool("useInstancing", false);
-		NewShader.setBool("useNormalMap", false);
-		NewShader.setBool("useTexture", false);
-		NewShader.setBool("hasNormals", true);
-		
-		//TexturedObjectShader.Use();
-		NewShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
-		NewShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		NewShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
-		NewShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+		TexturedObjectShader.Use();
+		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
+		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		
 		int pointLightIndex = 0;
 		string pointLightUniformTag;
 		for (PointLight light : staticPointLights) {
 			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
-			NewShader.setVec3(pointLightUniformTag + ".position", light.position);
-			NewShader.setVec3(pointLightUniformTag + ".ambient", light.ambient);
-			NewShader.setVec3(pointLightUniformTag + ".diffuse", light.diffuse);
-			NewShader.setVec3(pointLightUniformTag + ".specular", light.specular);
-			NewShader.setFloat(pointLightUniformTag + ".constant", light.constant);
-			NewShader.setFloat(pointLightUniformTag + ".linear", light.linear);
-			NewShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".position", light.position);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".ambient", light.ambient);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".diffuse", light.diffuse);
+			TexturedObjectShader.setVec3(pointLightUniformTag + ".specular", light.specular);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".constant", light.constant);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".linear", light.linear);
+			TexturedObjectShader.setFloat(pointLightUniformTag + ".quadratic", light.quadratic);
 			pointLightIndex++;
 		}
-
-		NewShader.setInt("numberOfPointLights", 4);
 		
 		
 		// spotLight
-		NewShader.setVec3("spotLight.position", camera.Position);
-		NewShader.setVec3("spotLight.direction", camera.Front);
-		NewShader.setVec3("spotLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
-		NewShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-		NewShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-		NewShader.setFloat("spotLight.constant", 1.0f);
-		NewShader.setFloat("spotLight.linear", 0.09f);
-		NewShader.setFloat("spotLight.quadratic", 0.032f);
-		NewShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-		NewShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+		TexturedObjectShader.setVec3("spotLight.position", camera.Position);
+		TexturedObjectShader.setVec3("spotLight.direction", camera.Front);
+		TexturedObjectShader.setVec3("spotLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		TexturedObjectShader.setFloat("spotLight.constant", 1.0f);
+		TexturedObjectShader.setFloat("spotLight.linear", 0.09f);
+		TexturedObjectShader.setFloat("spotLight.quadratic", 0.032f);
+		TexturedObjectShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		TexturedObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 
 		//--- Render cubes		
@@ -826,19 +792,14 @@ int main()
 			model = translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
 			model = rotate(model, radians(angle), vec3(1.0f, 0.3f, 0.5f));
-			NewShader.setMat4("model", model);
-			NewShader.setMat4("projection", projection);
-			NewShader.setMat4("view", view);
-			NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(model))));
+			TexturedObjectShader.setMat4("model", model);
+
 			//TexturedObjectShader.setVec3("lightPos", lightPos);
-			NewShader.setVec3("viewPos", camera.Position);
+			TexturedObjectShader.setVec3("viewPos", camera.Position);
 			//TexturedObjectShader.setVec3("light.position", camera.Position);
 			//TexturedObjectShader.setVec3("light.direction", camera.Front);
 			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
 			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-
-
 
 			sceneObjectDictionary["Cube Object"]->DrawMesh();
 		}
@@ -846,16 +807,14 @@ int main()
 
 
 		//--- Render Plane
-		NewShader.Use();
-		mat4 planeModel = mat4(1.0f);
-		planeModel = translate(planeModel, vec3(0.0f, 0.0f, -20.0f));
-		planeModel = scale(planeModel, vec3(90.0f, 1.0f, 50.0f));
-		planeModel = rotate(planeModel, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+		TexturedObjectShader.Use();
+		mat4 model = mat4(1.0f);
+		model = translate(model, vec3(0.0f, 0.0f, -20.0f));
+		model = scale(model, vec3(90.0f, 1.0f, 50.0f));
+		model = rotate(model, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
 
-		
-		NewShader.setMat4("model", planeModel);
-		NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(planeModel))));
-		NewShader.setBool("hasNormals", false);
+		TexturedObjectShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		TexturedObjectShader.setMat4("model", model);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
@@ -871,15 +830,15 @@ int main()
 			mat4 lampTransform = mat4(1.0f);
 			lampTransform = translate(lampTransform, vec3(lampPos.x, lampPos.y - 0.5f, lampPos.z));
 			lampTransform = scale(lampTransform, vec3(0.2f, 0.2f, 0.2f));
-			//modelShader.Use();
+			modelShader.Use();
 
-			//modelShader.setMat4("model", lampTransform);
-			//modelShader.setMat4("projection", projection);
-			//modelShader.setMat4("view", view);
-			//modelShader.setBool("hasNormals", false);
+			modelShader.setMat4("model", lampTransform);
+			modelShader.setMat4("projection", projection);
+			modelShader.setMat4("view", view);
+			modelShader.setBool("hasNormals", false);
 
 
-			//lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
+			lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
 
 		}
 
@@ -1090,41 +1049,41 @@ int main()
 		// ---------------------
 		// Instanced tree rendering
 
-		//modelShader.Use();
+		modelShader.Use();
 
-		//mat4 treeModelBase = mat4(1.0f);
-		//modelShader.setMat4("model", treeModelBase);
-		//modelShader.setMat4("projection", projection);
-		//modelShader.setMat4("view", view);
-		//modelShader.setBool("useInstancing", true);
-		//modelShader.setBool("hasNormals", true);
+		mat4 treeModelBase = mat4(1.0f);
+		modelShader.setMat4("model", treeModelBase);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", true);
+		modelShader.setBool("hasNormals", true);
 
-		//glBindVertexArray(treeModel.meshes[0].VAO);
+		glBindVertexArray(treeModel.meshes[0].VAO);
 
-		//GLuint currentTexture;
-		//glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
-		//glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
+		GLuint currentTexture;
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
+		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
 
 		//unit 2 id 4
 		//wall is unit 3 id 5
 		//lamp is unit 4 id 6		
-		//glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
-		//glBindVertexArray(0);
+		glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
+		glBindVertexArray(0);
 
 
 
 		//Render single tree for testing
-		//modelShader.Use();
-		//mat4 modelLocation = mat4(1.0f);
-		//modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
-		//modelShader.setMat4("model", modelLocation);
-		//modelShader.setMat4("projection", projection);
-		//modelShader.setMat4("view", view);
-		//modelShader.setBool("useInstancing", false);
-		//modelShader.setBool("hasNormals", true);
+		modelShader.Use();
+		mat4 modelLocation = mat4(1.0f);
+		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
+		modelShader.setMat4("model", modelLocation);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", false);
+		modelShader.setBool("hasNormals", true);
 
-		//glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-		//treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
+		treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
 
 		// old tree rendering
 		//--- Render trees
@@ -1173,20 +1132,20 @@ int main()
 
 
 		//--- Create wall model
-		//modelShader.Use();
-		//modelLocation = mat4(1.0f);
-		//modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
-		//modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
-		//modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-		//modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
-		//modelShader.setMat4("model", modelLocation);
-		//modelShader.setMat4("projection", projection);
-		//modelShader.setMat4("view", view);
-		//modelShader.setBool("useInstancing", false);
-		//modelShader.setBool("hasNormals", false);
+		modelShader.Use();
+		modelLocation = mat4(1.0f);
+		modelLocation = scale(modelLocation, vec3(0.8f, 0.8f, 0.8f));
+		modelLocation = translate(modelLocation, vec3(2.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+		modelLocation = rotate(modelLocation, radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
+		modelShader.setMat4("model", modelLocation);
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+		modelShader.setBool("useInstancing", false);
+		modelShader.setBool("hasNormals", false);
 
 
-		//wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
+		wallModel.Draw(modelShader, texNameToUnitNo["wallTexture"]);
 
 
 
@@ -1297,7 +1256,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 /// <param name="indicesCount">Total number of indices in array</param>
 /// <param name="sectionSizes">Vector listing the sizes of each attribute section in sequence</param>
 /// <param name="vertexAttributeCount">Number of floats per vertex</param>
-void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<VertAttribute> vertAttributes, int vertexAttributeCount) {
+void CreateObject(string name, float vertices[], int verticesElementCount, unsigned int indices[], int indicesCount, vector<int> sectionSizes, int vertexAttributeCount) {
 	CustomSceneObject* newObject = new CustomSceneObject();
 	newObject->PrepareAndBindVAO();
 
@@ -1310,7 +1269,7 @@ void CreateObject(string name, float vertices[], int verticesElementCount, unsig
 		newObject->PrepareAndBindEBO(indices, indicesDataSize, indicesCount);
 	}
 
-	newObject->PrepareVertexAttributeArrays(vertAttributes, vertexAttributeCount);
+	newObject->PrepareVertexAttributeArrays(sectionSizes, vertexAttributeCount);
 
 	sceneObjectDictionary[name] = newObject;
 }
@@ -1486,17 +1445,15 @@ void CreateProceduralTerrain(float* terrainVertices, int terrainVerticesCount) {
 	}
 
 	int terrainAttributeSize = 6;
-	
-
-	vector<VertAttribute> terrainAttributes =
+	vector<int> terrainSectionSizes =
 	{
-		{3, VertAttributeTypes::POSITION},
-		{3, VertAttributeTypes::COLOURVERTEX}
+		3, //Position
+		3  //Colour
 	};
 
 	int indicesCount = sizeof(terrainIndices) / sizeof(terrainIndices[0][0]);
 	size_t indicesDataSize = indicesCount * sizeof(unsigned int);
-	CreateObject("Procedural Terrain", terrainVertices, terrainVerticesCount, &terrainIndices[0][0], indicesCount, terrainAttributes, terrainAttributeSize);
+	CreateObject("Procedural Terrain", terrainVertices, terrainVerticesCount, &terrainIndices[0][0], indicesCount, terrainSectionSizes, terrainAttributeSize);
 
 
 }
@@ -1608,22 +1565,19 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 
 
 	int sphereAttributeSize = 11;
-	
-
-	vector<VertAttribute> terrainAttributes =
+	vector<int> sphereSectionSizes =
 	{
-		{3, VertAttributeTypes::POSITION},
-		{2, VertAttributeTypes::TEXCOORD},
-		{3, VertAttributeTypes::COLOURVERTEX},
-		{3, VertAttributeTypes::NORMAL}
+		3, //Position
+		2, //UV
+		3, //Colour
+		3  //Normal
 	};
-
 
 	//Removed when array was changed to pass in as a pointer
 	//int sphereVerticesCount = sizeof(sphereVertices) / sizeof(sphereVertices[0][0]);
 	//int indicesCount = sizeof(sphereIndices) / sizeof(sphereIndices[0]);d
 	size_t indicesDataSize = sphereIndicesCount * sizeof(unsigned int);
-	CreateObject("Sphere Object", sphereVertices[0][0], sphereVerticesCount, &sphereIndices[0], sphereIndicesCount, terrainAttributes, sphereAttributeSize);
+	CreateObject("Sphere Object", sphereVertices[0][0], sphereVerticesCount, &sphereIndices[0], sphereIndicesCount, sphereSectionSizes, sphereAttributeSize);
 
 }
 
