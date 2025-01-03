@@ -47,12 +47,7 @@ void main()
 	
 	if(hasNormals){
 		vs_out.Normal = inverseModelMat * aNormal;
-		
-	} else {
-		vs_out.Normal = aNormal;
 	}
-	
-	
 	
 
 	if(useInstancing){       

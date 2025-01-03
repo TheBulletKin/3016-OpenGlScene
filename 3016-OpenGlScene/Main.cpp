@@ -79,7 +79,10 @@ const int latitudeSteps = 18;
 const int sphereVerticesCount = latitudeSteps * longitudeSteps;
 const int sphereIndicesCount = (longitudeSteps - 1) * (latitudeSteps - 1) * 6;
 
+// -- Texture holder
 
+map<string, unsigned int> texNameToId;
+map<string, unsigned int> texNameToUnitNo;
 
 //-- For random number generation
 random_device rd; //Seed generation
@@ -341,15 +344,14 @@ int main()
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
 
-	
-	
+
 	// --------------------------------------------
 	// Texture loading
 	// --------------------------------------------
 	unsigned int containerTextureId;
 
 	LoadTexture(containerTextureId, "Media/container.jpg", loadedTextures, "container");
-	
+
 
 	
 
@@ -389,7 +391,7 @@ int main()
 
 	float terrainVertices[MAP_SIZE][6];
 	int terrainVerticesCount = sizeof(terrainVertices) / sizeof(terrainVertices[0]);
-	
+
 	CreateProceduralTerrain(&terrainVertices[0][0], terrainVerticesCount);
 
 
@@ -423,7 +425,7 @@ int main()
 
 	float sphereVertices[latitudeSteps][longitudeSteps][11];
 	unsigned int sphereIndices[(longitudeSteps - 1) * (latitudeSteps - 1) * 6];
-	
+
 
 	CreateSphereObject(sphereVertices, sphereIndices);
 
@@ -467,15 +469,15 @@ int main()
 			1.0f,
 			0.09f,
 			0.032f,
-			vec3(0.2f, 0.2f, 0.2f),
-			vec3(0.5f, 0.5f, 0.5f),
-			vec3(1.0f, 1.0f, 1.0f)
+			ambientLightColour,
+			lightColour,
+			lightColour
 		};
 
 		staticPointLights.push_back(newLight);
 	}
 
-	
+
 	vec3 lightPos(5.0f, 7.0f, -2.0f);
 	mat4 lightModel = mat4(1.0f);
 	lightModel = translate(lightModel, lightPos);
@@ -488,7 +490,7 @@ int main()
 	sphereShader.setVec3("lightPos", lightPos);
 	sphereShader.setBool("flatShading", false);
 
-	
+
 	//-------------
 	// Light colour variation texture
 	FastNoiseLite lightColourNoiseGenerator;
@@ -544,48 +546,20 @@ int main()
 	unsigned int firstNoiseTexture;
 	glGenTextures(1, &firstNoiseTexture);
 
-	
+	texNameToId["firstNoiseTexture"] = firstNoiseTexture;
+	texNameToUnitNo["firstNoiseTexture"] = 1;
 
-
-	int highestUnitNo = 0;
-
-	if (loadedTextures.empty())
-	{
-		highestUnitNo = -1;
-	}
-	for (Texture& texture : loadedTextures)
-	{
-		if (texture.heldUnit >= highestUnitNo)
-		{
-			highestUnitNo = texture.heldUnit;
-		}
-
-	}
-
-
-
-	Texture firstSphereTexture{
-		"FirstNoiseTexture",
-		firstNoiseTexture,
-		highestUnitNo + 1,
-		TextureType::DIFFUSE,
-		"NA",
-		0
-	};
-
-	loadedTextures.push_back(firstSphereTexture);
-	
-	glActiveTexture(GL_TEXTURE0 + highestUnitNo + 1);
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["firstNoiseTexture"]);
 	glBindTexture(GL_TEXTURE_2D, firstNoiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
 
-	sphereShader.Use();
-	sphereShader.setInt("firstNoiseTexture", firstSphereTexture.heldUnit);
+
+
+	sphereShader.setInt("firstNoiseTexture", texNameToUnitNo["firstNoiseTexture"]);
 
 	sphereNoiseGenerator.SetFrequency(0.01f);
 
@@ -606,36 +580,10 @@ int main()
 	unsigned int secondNoiseTexture;
 	glGenTextures(1, &secondNoiseTexture);
 
+	texNameToId["secondNoiseTexture"] = secondNoiseTexture;
+	texNameToUnitNo["secondNoiseTexture"] = 5;
 
-	highestUnitNo = 0;
-
-	if (loadedTextures.empty())
-	{
-		highestUnitNo = -1;
-	}
-	for (Texture& texture : loadedTextures)
-	{
-		if (texture.heldUnit >= highestUnitNo)
-		{
-			highestUnitNo = texture.heldUnit;
-		}
-
-	}
-
-
-
-	Texture secondSphereTexture{
-		"SecondNoiseTexture",
-		secondNoiseTexture,
-		highestUnitNo + 1,
-		TextureType::DIFFUSE,
-		"NA",
-		0
-	};
-
-	loadedTextures.push_back(secondSphereTexture);
-
-	glActiveTexture(GL_TEXTURE0 + highestUnitNo + 1);
+	glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["secondNoiseTexture"]);
 	glBindTexture(GL_TEXTURE_2D, secondNoiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, noiseWidth, noiseHeight, 0, GL_RED, GL_FLOAT, noiseData.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -643,25 +591,24 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	sphereShader.Use();
-	sphereShader.setInt("secondNoiseTexture", secondSphereTexture.heldUnit);
+	sphereShader.setInt("secondNoiseTexture", texNameToUnitNo["secondNoiseTexture"]);
 
 
 	// ----------------------------------
 	// Model importing
 	// ----------------------------------
-	
+
 	//Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
 	//Model ourModel("Media/BackpackModel/backpack.obj");
-	
+	texNameToUnitNo["treeTexture"] = 7;
 
 	Model treeModel("Media/Tree/Tree.obj", "TreeModel", loadedTextures);
 
 
-	
+	texNameToUnitNo["wallTexture"] = 3;
 	Model wallModel("Media/Wall/Wall.fbx", "WallModel", loadedTextures);
 
-	
+	texNameToUnitNo["lampTexture"] = 4;
 	Model lampModel("Media/Lamp/lamp.obj", "LampModel", loadedTextures);
 
 	// -----------------------------------
@@ -705,7 +652,7 @@ int main()
 		treeModelMatrices[i] = model;
 	}
 
-	
+
 	unsigned int instanceBuffer;
 	glGenBuffers(1, &instanceBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
@@ -778,8 +725,6 @@ int main()
 
 		//---------------------------------------
 		// Activate shader
-		GLenum error;
-		
 		TexturedObjectShader.Use();
 
 		//--------------------------------------
@@ -820,11 +765,11 @@ int main()
 
 
 		NewShader.Use();
-		
+
 		
 		NewShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
 		NewShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
-		NewShader.setVec3("material.ambient", 1.0f, 1.0f, 1.0f);
+		NewShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
 		NewShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 		NewShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		NewShader.setFloat("material.shininess", 32.0f);
@@ -841,7 +786,6 @@ int main()
 		NewShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
 		NewShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		NewShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-		
 		
 		int pointLightIndex = 0;
 		string pointLightUniformTag;
@@ -876,7 +820,6 @@ int main()
 		//--- Render cubes		
 		for (unsigned int i = 0; i < 10; i++)
 		{
-			
 			// calculate the model matrix for each object and pass it to shader before drawing
 			mat4 model = mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = translate(model, cubePositions[i]);
@@ -893,13 +836,6 @@ int main()
 			//TexturedObjectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
 			//TexturedObjectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
-			NewShader.setBool("useVertexColours", false);
-			NewShader.setBool("useTexCoords", true);
-			NewShader.setBool("useInstancing", false);
-			NewShader.setBool("useNormalMap", false);
-			NewShader.setBool("useTexture", false);
-			NewShader.setBool("hasNormals", true);
-			
 
 
 
@@ -927,7 +863,7 @@ int main()
 
 		//sceneObjectDictionary["Plane Object"]->DrawMesh();
 
-		error;
+		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
 			cerr << "OpenGL error after plane rendering: " << error << endl;
 		}
@@ -936,7 +872,9 @@ int main()
 		//--- Render lamps
 		for (vec3 lampPos : pointLightPositions)
 		{
-			
+			mat4 lampTransform = mat4(1.0f);
+			lampTransform = translate(lampTransform, vec3(lampPos.x, lampPos.y - 0.5f, lampPos.z));
+			lampTransform = scale(lampTransform, vec3(0.2f, 0.2f, 0.2f));
 			//modelShader.Use();
 
 			//modelShader.setMat4("model", lampTransform);
@@ -946,25 +884,6 @@ int main()
 
 
 			//lampModel.Draw(modelShader, texNameToUnitNo["lampTexture"]);
-
-			//--- Render Plane
-			NewShader.Use();
-			mat4 lampTransform = mat4(1.0f);
-			lampTransform = scale(lampTransform, vec3(0.8f, 0.8f, 0.8f));
-			lampTransform = translate(lampTransform, vec3(lampPos.x, lampPos.y - 0.5f, lampPos.z));
-			
-
-
-			NewShader.setMat4("model", lampTransform);
-			NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(lampTransform))));
-			NewShader.setBool("useVertexColours", false);
-			NewShader.setBool("useTexCoords", true);
-			NewShader.setBool("useInstancing", false);
-			NewShader.setBool("useNormalMap", false);
-			NewShader.setBool("useTexture", true);
-			NewShader.setBool("hasNormals", true);
-
-			lampModel.Draw(NewShader, loadedTextures);
 
 		}
 
@@ -1186,9 +1105,9 @@ int main()
 		NewShader.setBool("useVertexColours", false);
 		NewShader.setBool("useTexCoords", true);
 		NewShader.setBool("useInstancing", false);
-		NewShader.setBool("useNormalMap", false);
-		NewShader.setBool("useTexture", false);
-		NewShader.setBool("hasNormals", false);
+		NewShader.setBool("useNormalMap", true);
+		NewShader.setBool("useTexture", true);
+		NewShader.setBool("hasNormals", true);
 
 		//glBindVertexArray(treeModel.meshes[0].VAO);
 
@@ -1422,10 +1341,10 @@ void LoadTexture(unsigned int& textureId, const char* filePath, vector<Texture>&
 		
 	}
 
-	
+
 	
 	glGenTextures(1, &textureId);
-	glActiveTexture(GL_TEXTURE0 + highestUnitNo + 1);
+	glActiveTexture(highestUnitNo + 1);
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	
 

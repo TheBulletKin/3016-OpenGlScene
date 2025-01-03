@@ -57,33 +57,21 @@ void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
 		string number;
 		//string name = "texture_diffuse";
 		string typeSuffix = "";
-		GLuint currentTexture;
+
 		for (Texture texture : loadedTextures) {
 			if (texture.name == textures[i].name)
 			{
 				switch (texture.type)
 				{ 
 				case TextureType::DIFFUSE:
-					currentTexture;
-					
-					glActiveTexture(GL_TEXTURE0 + texture.heldUnit);
-					
 					shader.setInt("texture_diffuse", texture.heldUnit);
-					glBindTexture(GL_TEXTURE_2D, texture.id);
-					glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 					break;
 				case TextureType::NORMAL:
-					currentTexture;
-					glActiveTexture(GL_TEXTURE0 + texture.heldUnit);
-					glBindTexture(GL_TEXTURE_2D, texture.id);
-					//shader.setInt("texture_normal", texture.heldUnit);
-					glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-					
+					shader.setInt("texture_normal", texture.heldUnit);
 					break;
 				default:
 					break;
 				}
-				break;
 				
 			}
 		}
