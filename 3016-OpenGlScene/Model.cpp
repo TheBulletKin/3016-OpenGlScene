@@ -106,8 +106,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, vector<Texture>& loa
 	vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", loadedTextures);
 	textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 	// 2. specular maps
-	vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", loadedTextures);
-	textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+	//vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", loadedTextures);
+	//textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	// 3. normal maps
 	std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", loadedTextures);
 	textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
@@ -178,15 +178,16 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 		mat->GetTexture(type, i, &importerPathString);
 		// check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
 		bool skip = false;
+		
 		for (unsigned int j = 0; j < textures_loaded.size(); j++)
 		{
 			//If the loaded textures already contains the one to load, just set the material texture to that to avoid making new ones each time
-			if (textures_loaded[j].path == importerPathString.C_Str())
-			{
-				textures.push_back(textures_loaded[j]);
-				skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-				break;
-			}
+			//if (textures_loaded[j].path == importerPathString.C_Str())
+			//{
+				//textures.push_back(textures_loaded[j]);
+				//skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
+				////break;
+			//}
 		}
 		if (!skip)
 		{   // if texture hasn't been loaded already, load it
@@ -245,9 +246,12 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
 
 			loadedTextures.push_back(texture);
 
-			
+			GLuint currentTexture;
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 			glActiveTexture(texture.heldUnit);
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 			glBindTexture(GL_TEXTURE_2D, texture.id);
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
 
 			textures.push_back(texture);
 			textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
