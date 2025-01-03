@@ -70,8 +70,8 @@ uniform bool hasNormals;
 uniform int numberOfPointLights;
 
 //Texture samplers (assign correct texture unit on cpu)
-uniform sampler2D texture_diffuse;
-uniform sampler2D texture_normal;
+uniform sampler2D texture_diffuse0;
+uniform sampler2D texture_normal0;
 
 
 uniform vec3 lightColor;
@@ -80,24 +80,27 @@ uniform vec3 viewPos;
 
 uniform mat3 inverseModelMat;
 
-mat3 TBN;
-
 out vec4 FragColor;
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 colour); 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 colour);  
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, mat3 TBN, vec3 colour); 
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 TBN, vec3 colour);  
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 TBN);
 
 void main()
 {
-
-
-	 
+	vec3 T = normalize(inverseModelMat * fs_in.Tangent);
+    vec3 N = normalize(inverseModelMat * fs_in.Normal);
+    T = normalize(T - dot(T, N) * N);
+   	vec3 B = cross(N, T);
+	mat3 TBN = transpose(mat3(T, B, N));    
+    
+    TangentViewPos  = TBN * viewPos;
+    TangentFragPos  = TBN * fs_in.FragPos; 
 
     vec3 colour;
     if(useTexture == true && useVertexColours == false)
     {
-        colour = texture(texture_diffuse, fs_in.TexCoord).rgb;
+        colour = texture(texture_diffuse0, fs_in.TexCoord).rgb;
     }
     else if(useTexture == false && useVertexColours == true)
     {
@@ -109,48 +112,42 @@ void main()
     }
 
     
-    vec3 normal = normalize(fs_in.Normal);
+    vec3 normal;
     vec3 lightDir;
-    vec3 viewDir = normalize(viewPos - fs_in.FragPos);
+    vec3 viewDir;
     if(useNormalMap){ //Has a normal map to sample from
         // obtain normal from normal map in range [0,1]
-        normal = texture(texture_normal, fs_in.TexCoord).rgb;
+        normal = texture(texture_normal0, fs_in.TexCoord).rgb;
         // transform normal vector to range [-1,1]
         normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
 
-        vec3 T = normalize(inverseModelMat * fs_in.Tangent);
-        vec3 N = normalize(inverseModelMat * fs_in.Normal);
-        T = normalize(T - dot(T, N) * N);
-   	    vec3 B = cross(N, T);
-	    TBN = transpose(mat3(T, B, N));    
-
-        //normal = normalize(TBN * normal);
-    
-        TangentViewPos  = TBN * viewPos;
-        TangentFragPos  = TBN * fs_in.FragPos;
-
         viewDir = normalize(TangentViewPos - TangentFragPos);
-    } 
+    } else if(hasNormals) { //No normal map, normals passed in from vertex shader
+        normal = normalize(fs_in.Normal);
+        
+       //Vector from the view to the fragment currently being processed
+        viewDir = normalize(viewPos - fs_in.FragPos);
+    }
     
 
     
-    vec3 result = vec3(0.0);
+
     // phase 1: Directional lighting
-   // vec3 result = CalcDirLight(dirLight, normal, viewDir,colour);
+    vec3 result = CalcDirLight(dirLight, normal, viewDir, TBN, colour);
 
     // phase 2: Point lights
-    for(int i = 0; i < NR_POINT_LIGHTS; i++){
-        result += CalcPointLight(pointLights[i], normal, fs_in.FragPos, viewDir, colour);
-    }      
+    for(int i = 0; i < NR_POINT_LIGHTS; i++)
+        result += CalcPointLight(pointLights[i], normal, fs_in.FragPos, viewDir, TBN, colour);
+
     // phase 3: Spot light
-    // result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
+    // result += CalcSpotLight(spotLight, norm, FragPos, viewDir, TBN);    
     
     FragColor = vec4(result, 1.0);
     
     
 }
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 colour)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, mat3 TBN, vec3 colour)
 {
     vec3 lightDir = normalize(-light.direction);
     // diffuse shading
@@ -170,18 +167,10 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 colour)
     return (ambient + diffuse + specular);
 }  
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 colour)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 TBN, vec3 colour)
 {
-    /*
-    vec3 lightDir;
-    //if (useNormalMap){
-       // TangentLightPos = TBN * light.position;
-        //lightDir = normalize(TangentLightPos - TangentFragPos);
-   // } else {
-       // lightDir = normalize(light.position - fragPos);
-    //}
-    
-     lightDir = normalize(light.position - fragPos);
+    TangentLightPos = TBN * light.position;
+    vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
     //Calculate the diffuse value based off these normals
         //1 means light source is perpendicular, less means it's more parallel
@@ -200,32 +189,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, v
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-*/
-    
-    
-    // ambient
-    vec3 ambient = 0.1 * colour;
-    // diffuse
-    vec3 lightDir = normalize(TangentLightPos - TangentFragPos);
-    float diff = max(dot(lightDir, normal), 0.0);
-    vec3 diffuse = diff * colour;
-    // specular
-    viewDir = normalize(TangentViewPos - TangentFragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-
-    vec3 specular = vec3(0.2) * spec;
-    
-
-
     return (ambient + diffuse + specular);
-
-
 } 
 
 // calculates the color when using a spot light.
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 TBN)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading

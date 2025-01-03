@@ -602,14 +602,14 @@ int main()
 	//Model ourModel("Media/BackpackModel/backpack.obj");
 	texNameToUnitNo["treeTexture"] = 7;
 
-	Model treeModel("Media/Tree/Tree.obj", "TreeModel", loadedTextures);
+	Model treeModel("Media/Tree/Tree.obj", texNameToUnitNo["treeTexture"]);
 
 
 	texNameToUnitNo["wallTexture"] = 3;
-	Model wallModel("Media/Wall/Wall.fbx", "WallModel", loadedTextures);
+	Model wallModel("Media/Wall/Wall.fbx", texNameToUnitNo["wallTexture"]);
 
 	texNameToUnitNo["lampTexture"] = 4;
-	Model lampModel("Media/Lamp/lamp.obj", "LampModel", loadedTextures);
+	Model lampModel("Media/Lamp/lamp.obj", texNameToUnitNo["lampTexture"]);
 
 	// -----------------------------------
 	// Tree position generation
@@ -852,16 +852,16 @@ int main()
 		planeModel = rotate(planeModel, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
 
 		
-		//NewShader.setMat4("model", planeModel);
-		//NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(planeModel))));
-		//NewShader.setBool("useVertexColours", false);
-		//NewShader.setBool("useTexCoords", true);
-		//NewShader.setBool("useInstancing", false);
-		//NewShader.setBool("useNormalMap", false);
-		//NewShader.setBool("useTexture", false);
-		//NewShader.setBool("hasNormals", false);
+		NewShader.setMat4("model", planeModel);
+		NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(planeModel))));
+		NewShader.setBool("useVertexColours", false);
+		NewShader.setBool("useTexCoords", true);
+		NewShader.setBool("useInstancing", false);
+		NewShader.setBool("useNormalMap", false);
+		NewShader.setBool("useTexture", false);
+		NewShader.setBool("hasNormals", false);
 
-		//sceneObjectDictionary["Plane Object"]->DrawMesh();
+		sceneObjectDictionary["Plane Object"]->DrawMesh();
 
 		GLenum error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1101,26 +1101,26 @@ int main()
 		NewShader.setMat4("projection", projection);
 		NewShader.setMat4("view", view);		
 
-		NewShader.setMat3("inverseModelMat", mat3(transpose(inverse(treeModelBase))));
 		NewShader.setBool("useVertexColours", false);
 		NewShader.setBool("useTexCoords", true);
-		NewShader.setBool("useInstancing", false);
+		NewShader.setBool("useInstancing", true);
 		NewShader.setBool("useNormalMap", true);
 		NewShader.setBool("useTexture", true);
 		NewShader.setBool("hasNormals", true);
 
-		//glBindVertexArray(treeModel.meshes[0].VAO);
+		glBindVertexArray(treeModel.meshes[0].VAO);
 
-		//GLuint currentTexture;
-		
+		GLuint currentTexture;
+		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
+		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
 
 		//unit 2 id 4
 		//wall is unit 3 id 5
 		//lamp is unit 4 id 6		
-		//glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
-		//glBindVertexArray(0);
+		glDrawElementsInstanced(GL_TRIANGLES, treeModel.meshes[0].indices.size(), GL_UNSIGNED_INT, 0, numberOfTrees);
+		glBindVertexArray(0);
 
-		treeModel.Draw(NewShader, loadedTextures);
+
 
 		//Render single tree for testing
 		//modelShader.Use();
@@ -1133,8 +1133,7 @@ int main()
 		//modelShader.setBool("hasNormals", true);
 
 		//glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&currentTexture);
-		//
-		// treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
+		//treeModel.Draw(modelShader, texNameToUnitNo["treeTexture"]);
 
 		// old tree rendering
 		//--- Render trees
@@ -1327,39 +1326,27 @@ void CreateObject(string name, float vertices[], int verticesElementCount, unsig
 
 void LoadTexture(unsigned int& textureId, const char* filePath, vector<Texture>& loadedTextures, string name) {
 	int highestUnitNo = 0;
-
-	if (loadedTextures.empty())
-	{
-		highestUnitNo = -1;
-	}
 	for ( Texture& texture : loadedTextures)
 	{
-		if (texture.heldUnit >= highestUnitNo)
+		if (texture.heldUnit > highestUnitNo)
 		{
 			highestUnitNo = texture.heldUnit;
 		}
-		
 	}
-
-
 	
 	glGenTextures(1, &textureId);
-	glActiveTexture(highestUnitNo + 1);
+	glActiveTexture(highestUnitNo);
 	glBindTexture(GL_TEXTURE_2D, textureId);
-	
 
 	Texture newTexture{
 		name,
 		textureId,
-		highestUnitNo + 1,
+		highestUnitNo,
 		TextureType::DIFFUSE,
-		filePath,
-		0
+		filePath
 	};
 
 	loadedTextures.push_back(newTexture);
-
-	
 
 	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);

@@ -1,15 +1,15 @@
 #include "Mesh.h"
 
-Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, vector<Texture>& loadedTextures, string name)
+Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, unsigned int baseTextureUnit)
 {
 	this->vertices = vertices;
 	this->indices = indices;
 	this->textures = textures;
-	this->name = name;
-	setupMesh(loadedTextures);
+
+	setupMesh(baseTextureUnit);
 }
 
-void Mesh::setupMesh(vector<Texture>& loadedTextures)
+void Mesh::setupMesh(unsigned int baseTextureUnit)
 {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -40,11 +40,14 @@ void Mesh::setupMesh(vector<Texture>& loadedTextures)
 	glEnableVertexAttribArray(5);
 	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 
+	
+	glActiveTexture(GL_TEXTURE0 + baseTextureUnit + 1);
+	glBindTexture(GL_TEXTURE_2D, textures[0].id);
 
 	glBindVertexArray(0);
 }
 
-void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
+void Mesh::Draw(Shader& shader, unsigned int baseTextureUnit)
 {
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
@@ -55,28 +58,24 @@ void Mesh::Draw(Shader& shader, vector<Texture>& loadedTextures)
 		// glActiveTexture(GL_TEXTURE0 + baseTextureUnit + i); // activate proper texture unit before binding
 		 // retrieve texture number (the N in diffuse_textureN)
 		string number;
-		//string name = "texture_diffuse";
-		string typeSuffix = "";
-
-		for (Texture texture : loadedTextures) {
-			if (texture.name == textures[i].name)
-			{
-				switch (texture.type)
-				{ 
-				case TextureType::DIFFUSE:
-					shader.setInt("texture_diffuse", texture.heldUnit);
-					break;
-				case TextureType::NORMAL:
-					shader.setInt("texture_normal", texture.heldUnit);
-					break;
-				default:
-					break;
-				}
-				
-			}
+		string name = "texture_diffuse";
+		//string name = textures[i].type;
+		if (name == "texture_diffuse") {
+			number = to_string(diffuseNr++);
 		}
 
-	
+		else if (name == "texture_specular") {
+			number = to_string(specularNr++);
+		}
+		else if (name == "texture_normal")
+			number = std::to_string(normalNr++); // transfer unsigned int to string
+		else if (name == "texture_height")
+			number = std::to_string(heightNr++); // transfer unsigned int to string
+
+		//Make sure the base texture unit passed in has a gap of two for the diffuse and normal for the trees
+		shader.setInt((name + number).c_str(), i);
+		glActiveTexture(GL_TEXTURE0 + baseTextureUnit);
+	    glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 	//shader.setInt(("texture_diffuse1"), baseTextureUnit);
 	//glActiveTexture(GL_TEXTURE0 + baseTextureUnit);

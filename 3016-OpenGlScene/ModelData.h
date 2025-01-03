@@ -33,7 +33,6 @@ enum TextureType {
 /// uint heldUnit | 
 /// TextureType type | 
 /// string path |
-/// Additional textures |
 /// </summary>
 struct Texture {
     string name;
@@ -41,7 +40,6 @@ struct Texture {
     unsigned int heldUnit; // The texture unit that this texture currently exists in
     TextureType type;      // Type of texture (e.g., "diffuse", "specular")
     string path;      // Path to the texture file
-    int additionalTextures; // For example if two textures exist for one object, do 1
 };
 
 

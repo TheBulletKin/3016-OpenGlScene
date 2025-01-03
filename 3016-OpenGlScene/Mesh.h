@@ -25,16 +25,15 @@ public:
     vector<unsigned int> indices;
     vector<Texture>      textures;
 
-    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, vector<Texture>& loadedTextures, string name);
-    void Draw(Shader& shader, vector<Texture>& loadedTextures);
+    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, unsigned int baseTextureUnit);
+    void Draw(Shader& shader, unsigned int baseTextureUnit = 0);
 
     //  render data
     unsigned int VAO, VBO, EBO;
-    string name;
 private:
     
 
-    void setupMesh(vector<Texture>& loadedTextures);
+    void setupMesh(unsigned int baseTextureUnit);
 };
 
 
