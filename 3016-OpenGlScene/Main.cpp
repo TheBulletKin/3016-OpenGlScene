@@ -486,8 +486,8 @@ int main()
 	lightColourNoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	lightColourNoiseGenerator.SetFrequency(0.2f);
 
-	vec3 RedColour(1.0f, 0.0f, 0.0f);
-	vec3 OrangeColour(1.0f, 0.65f, 0.0f);
+	vec3 RedColour(224.0f / 255.0f, 151.0f / 255.0f, 130.0f / 255.0f);
+	vec3 OrangeColour(212.0f / 255.0f, 164.0f / 255.0f, 116.0f / 255.0f);
 
 	const int lightNoiseTextureLength = 512;
 	int lightNoiseTextureCurrentIndex = 0;
@@ -606,6 +606,23 @@ int main()
 	// Model Shader
 	// ----------------------
 	Shader modelShader("Shaders/ModelVertexShader.v", "Shaders/ModelFragmentShader.f");
+
+	modelShader.Use();
+	modelShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
+	modelShader.setVec3("material.ambient", 0.2f, 0.2f, 0.2f);
+	modelShader.setVec3("material.diffuse", 0.7f, 0.7f, 0.7f);
+	modelShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	modelShader.setFloat("material.shininess", 2.0f);
+	modelShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	modelShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	modelShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	
+	modelShader.setFloat("light.constant", 1.0f);
+	modelShader.setFloat("light.linear", 0.09f);
+	modelShader.setFloat("light.quadratic", 0.032f);
+	modelShader.setVec3("light.position", camera.Position);
+	modelShader.setVec3("light.direction", camera.Front);
+	modelShader.setFloat("light.cutOff", cos(radians(12.5f)));
 #pragma endregion
 
 
@@ -797,7 +814,49 @@ int main()
 		// ----------------------------
 		// Model lighting update
 		// ---------------------------
+		modelShader.Use();
+		modelShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
+		modelShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		modelShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
+		modelShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+		// pointLights
+		pointLightIndex = 0;
+		
+		for (PointLight* light : staticPointLights) {
+			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
+			modelShader.setVec3(pointLightUniformTag + ".position", light->position);
+			modelShader.setVec3(pointLightUniformTag + ".ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+			modelShader.setVec3(pointLightUniformTag + ".diffuse", lightColour);
+			modelShader.setVec3(pointLightUniformTag + ".specular", lightColour);
+			modelShader.setFloat(pointLightUniformTag + ".constant", light->constant);
+			modelShader.setFloat(pointLightUniformTag + ".linear", light->linear);
+			modelShader.setFloat(pointLightUniformTag + ".quadratic", light->quadratic);
+			pointLightIndex++;
+		}
 
+
+		for (PointLight* light : dynamicPointLights) {
+			pointLightUniformTag = ("pointLights[" + to_string(pointLightIndex) + "]");
+			modelShader.setVec3(pointLightUniformTag + ".position", light->position);
+			modelShader.setVec3(pointLightUniformTag + ".ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+			modelShader.setVec3(pointLightUniformTag + ".diffuse", bubbleLightColour);
+			modelShader.setVec3(pointLightUniformTag + ".specular", bubbleLightColour);
+			modelShader.setFloat(pointLightUniformTag + ".constant", light->constant);
+			modelShader.setFloat(pointLightUniformTag + ".linear", light->linear);
+			modelShader.setFloat(pointLightUniformTag + ".quadratic", light->quadratic);
+			pointLightIndex++;
+		}
+		// spotLight
+		modelShader.setVec3("spotLight.position", camera.Position);
+		modelShader.setVec3("spotLight.direction", camera.Front);
+		modelShader.setVec3("spotLight.ambient", 0.1f, 0.1f, 0.1f);
+		modelShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		modelShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		modelShader.setFloat("spotLight.constant", 1.0f);
+		modelShader.setFloat("spotLight.linear", 0.09f);
+		modelShader.setFloat("spotLight.quadratic", 0.032f);
+		modelShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		modelShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 		// ----------------------------
 		// Sphere lighting update
