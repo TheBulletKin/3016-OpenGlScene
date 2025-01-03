@@ -166,7 +166,6 @@
 *	Look at all the differences between the different shaders.
 *	Terrain shader should use the regular fragment shader but have the colour layout position.
 *	Sort out the layout then look at how I set up these in the object creation method. Look at a way to define the attributes better so I can avoid assigning unecessary ones and make it know which to use
-	Define a point light object on CPU side with a struct in the shader that matches
-	Improve point light value assigning for textured objects using this new collection
+
 
 */

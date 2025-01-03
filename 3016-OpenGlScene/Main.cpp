@@ -108,24 +108,6 @@ struct Point {
 
 };
 
-struct PointLight {
-	vec3 position;
-
-	//Attenuation
-	float constant;
-	float linear;
-	float quadratic;
-
-	//Colours for respective light values
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
-};
-
-int maxPointLights = 8;
-vector<PointLight> staticPointLights;
-vector<PointLight> dynamicPointLights;
-
 int main()
 {
 	//--- Initialize GLFW
@@ -331,7 +313,7 @@ int main()
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
 
-
+	
 	// --------------------------------------------
 	// Texture loading
 	// --------------------------------------------
@@ -341,7 +323,7 @@ int main()
 
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, containerTextureId);
+	glBindTexture(GL_TEXTURE_2D, containerTextureId); 
 
 
 	texNameToId["container"] = containerTextureId;
@@ -440,9 +422,7 @@ int main()
 	// Light creation
 	// ----------------------------------------
 
-	vec3 lightColour(1.0f, 1.0f, 1.0f);
-	vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
-	vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
+	
 
 	vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.5f,  3.0f),
@@ -451,21 +431,10 @@ int main()
 		glm::vec3(6.0f,  0.5f, -3.0f)
 	};
 
-	for (vec3 lightPos : pointLightPositions)
-	{
-		PointLight newLight{
-			lightPos,
-			1.0f,
-			0.09f,
-			0.032f,
-			ambientLightColour,
-			lightColour,
-			lightColour
-		};
+	
+	vec3 lightColour(1.0f, 1.0f, 1.0f);
 
-		staticPointLights.push_back(newLight);
-	}
-
+	
 
 	vec3 lightPos(5.0f, 7.0f, -2.0f);
 	mat4 lightModel = mat4(1.0f);
@@ -638,12 +607,12 @@ int main()
 		treeModelMatrices[i] = model;
 	}
 
-
+	
 	unsigned int instanceBuffer;
 	glGenBuffers(1, &instanceBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glBufferData(GL_ARRAY_BUFFER, numberOfTrees * sizeof(mat4), &treeModelMatrices[0], GL_STATIC_DRAW);
-
+	
 	unsigned int treeVAO = treeModel.meshes[0].VAO;
 	glBindVertexArray(treeVAO);
 	// set attribute pointers for matrix (4 times vec4)
@@ -655,12 +624,12 @@ int main()
 	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
 	glEnableVertexAttribArray(8);
 	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
-
+	
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
 	glVertexAttribDivisor(8, 1);
-
+	
 
 	glBindVertexArray(0);
 
@@ -681,7 +650,7 @@ int main()
 	}
 
 
-
+	
 
 	// -----------------------------------
 	// Main render loop
@@ -708,7 +677,7 @@ int main()
 		//Audio updating
 		audioEngine->setListenerPosition(vec3df(camera.Position.x, camera.Position.y, camera.Position.z), vec3df(-camera.Front.x, -camera.Front.y, -camera.Front.z));
 		audioEngine->setRolloffFactor(2.0f);
-
+	
 		//---------------------------------------
 		// Activate shader
 		TexturedObjectShader.Use();
@@ -747,7 +716,8 @@ int main()
 	   by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
 	*/
 	// directional light
-
+		vec3 dirLightColour = vec3(71.0f / 255.0f, 113.0f / 255.0f, 214.0f / 255.0f);
+		vec3 ambientLightColour = vec3(3.0f / 255.0f, 10.0f / 255.0f, 28.0f / 255.0f);
 		TexturedObjectShader.Use();
 		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
 		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
@@ -922,14 +892,14 @@ int main()
 			ISound* sound = audioEngine->play3D("Media/Audio/bathtub-ambience-27873.mp3", vec3df(spawnPosition.x, spawnPosition.y, spawnPosition.z), true, false, true);
 			if (!sound) {
 				std::cerr << "Failed to load sound file for bubble" << std::endl;
-
+				
 			}
 			else {
 				sound->setVolume(2.5f);
-
+				
 				sound->setMinDistance(5.0f);
-
-
+				
+				
 				bubbleSounds[newProjectileObject] = sound;
 			}
 
@@ -1054,7 +1024,7 @@ int main()
 			cerr << "OpenGL error post sphere render: " << error << endl;
 		}
 
-
+		
 
 		error;
 		while ((error = glGetError()) != GL_NO_ERROR) {
@@ -1078,7 +1048,7 @@ int main()
 		GLuint currentTexture;
 		glActiveTexture(GL_TEXTURE0 + texNameToUnitNo["treeTexture"]);
 		glBindTexture(GL_TEXTURE_2D, treeModel.textures_loaded[0].id);
-
+		
 		//unit 2 id 4
 		//wall is unit 3 id 5
 		//lamp is unit 4 id 6		

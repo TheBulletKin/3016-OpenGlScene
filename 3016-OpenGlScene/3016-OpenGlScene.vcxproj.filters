@@ -91,6 +91,18 @@
     <None Include="Shaders\TerrainVertexShader.v">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\LightsourceFragmentShader.f">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LightsourceVertexShader.v">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LitVertexShader.v">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LitFragmentShader.f">
+      <Filter>Shaders</Filter>
+    </None>
     <None Include="Shaders\SphereVertexShader.v">
       <Filter>Shaders</Filter>
     </None>
@@ -101,12 +113,6 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\ModelVertexShader.v">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\NewFragmentShader.f">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\NewVertexShader.v">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
