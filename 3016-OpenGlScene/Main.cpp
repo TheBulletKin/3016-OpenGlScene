@@ -1628,20 +1628,12 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereVertices[lat][lon][8] = normalX;
 			sphereVertices[lat][lon][9] = normalY;
 			sphereVertices[lat][lon][10] = normalZ;
-
-
 		}
 	}
-
-
 
 	//Fill indices array
 	int i = 0;
 	for (int lat = 0; lat < latitudeSteps - 1; lat++) {
-
-
-
-
 		for (int lon = 0; lon < longitudeSteps - 1; lon++) {
 
 			//Since sphereVertices is 2 dimensional [lat][lon], this will set the index to the 'flattened index'
@@ -1653,8 +1645,6 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			int bottomLeft = (lat + 1) * longitudeSteps + lon;
 			int topRight = lat * longitudeSteps + (lon + 1) % longitudeSteps;
 			int bottomRight = (lat + 1) * longitudeSteps + (lon + 1) % longitudeSteps;
-
-
 
 			//When the vertical slice is the last one
 			if (lon == longitudeSteps - 2)
@@ -1675,19 +1665,9 @@ void CreateSphereObject(float sphereVertices[latitudeSteps][longitudeSteps][11],
 			sphereIndices[i + 4] = bottomRight;
 			sphereIndices[i + 5] = bottomLeft;
 
-
-
-
-
 			i += 6;
 		}
 	}
-
-
-
-
-
-
 	int sphereAttributeSize = 11;
 	vector<int> sphereSectionSizes =
 	{

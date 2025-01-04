@@ -119,6 +119,12 @@ Main()
 ### Procedural Terrain Generation
 Displayed in Main.cpp, terrain is generated procedurally using FastNoiseLite.
 
+### Sphere generation
+The sphere used as the base for the bubbles was put together by the help of this article on [the virtual representation of a sphere](https://www.songho.ca/opengl/gl_sphere.html). It explaines how you can calculate the coordinates of a sphere mesh using phi and theta, iterate through to create a vertex array as well as the indices used for rendering. My implementation takes on a lot of what this resource teaches, but I have changed it considerably to match my needs.
+
+Implementation can be seen in the CreateSphereObject method in Main.cpp.
+
+
 ### Projectile objects
 Each of the bubbles seen in the scene are instances of an `ArcingProjectileObject`, a subclass of `CustomSceneObject`, a class I created to make assigning VAOs, EBOs and VBOs easier, while also allowing for me to maintain a collection of created objects. `ArcingProjectileObject`s take in a current position, launch vector and speed multipliers which are all generated here in the main render loop once a certain timer limit has been reached.
 
