@@ -1,3 +1,4 @@
+## Oliver Warry
 # OpenGl Scene Report - Zone Wonderer
 This repository contains all the content relating to my OpenGL scene, made as part of a university project.
 
