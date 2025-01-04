@@ -35,6 +35,8 @@ https://pixabay.com/sound-effects/bathtub-ambience-27873/
 
 https://pixabay.com/music/ambient-mysterious-ambient-suspense-atmosphere-252023/
 
+https://ambientcg.com/view?id=Ground048
+
 ## Other used resources
 [LearnOpenGl](https://learnopengl.com/) was used to get to grips with a lot of the fundamental concepts. The Shader header file, Model and Mesh.
 
@@ -382,3 +384,19 @@ glEnable(GL_CULL_FACE);
 glCullFace(GL_BACK);
 glFrontFace(GL_CCW);
 ```
+
+## Missed features and future plans
+### Further Optimisation
+While the current version runs well due to its small size, I realise i can make further optimisations on the memory side of things. I could use `new` and move certain objects to the heap instead of keeping it on the stack which could help avoid potential memory problems in the future. This would require me going through and seeing where I can pass objects in by reference rather than value and considering the use of `new` instead of hard object definitions. It works well enough now but it is something I can tackle later.
+
+### Normal Mapping
+Over the last week I tried to get normal maps working, using a map I had baked for the tree in blender, but it just wasn't working right. I had edited the Model and Mesh class to use a global texture container shared across all objects to avoid texture overwriting, but not matter what I did it wouldn't work as I'd intended. I reverted back to a previous state using previous github commits.
+
+### Ground texture fixes
+I have added a ground texture to the base plane, but it doesn't quite look right. I will spend some time messing with the light values to try and fix it, but for the time being it would take up too much time and had to leave it as is for now.
+
+### Additional texture planes and billboarding
+Currently the trees have no leaves, it's just the trunk and branches. I would have liked to have added several leaf texture planes with alpha transparency to immitate the methods used in games to simulate foliage. In future I may also add grass using a similar method, but using billboarding to orient the planes towards the camera, used by games like The Long Dark to great effect. This, alongside potential ground textures, could enhance the overall aesthetic a lot.
+
+### Trees placed on procedural terrain
+The procedural terrain is placed behind the camera for the time being as a temporary measure because if it is what appears in front of you the trees would clip through the surface. In future i'd like to figure out how to generate a tree and have it be positions on the surface of this generated terrain, then the height could be held as a texture that the fragment shader mixes with an image texture to create a proper ground texture.

@@ -373,9 +373,9 @@ int main()
 
 	TexturedObjectShader.setInt("texture1", texNameToUnitNo["container"]);
 	TexturedObjectShader.setBool("useTexture", true);
-	TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 0.5f, 0.31f));
+	TexturedObjectShader.setVec3("objectColor", vec3(1.0f, 1.0f, 1.0f));
 	TexturedObjectShader.setVec3("lightColor", vec3(1.2f, 1.0f, 2.0f));
-	TexturedObjectShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+	TexturedObjectShader.setVec3("material.ambient", .1f, 1.0f, 1.0f);
 	TexturedObjectShader.setVec3("material.diffuse", 1.0f, 1.0f, 1.0f);
 	TexturedObjectShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 	TexturedObjectShader.setFloat("material.shininess", 32.0f);
@@ -401,7 +401,7 @@ int main()
 	// --------------------------------------------
 	unsigned int containerTextureId;
 
-	LoadTexture(containerTextureId, "Media/container.jpg");
+	LoadTexture(containerTextureId, "Media/GroundTexture/Ground048_1K-JPG_Color.jpg");
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, containerTextureId);
@@ -766,7 +766,7 @@ int main()
 
 		TexturedObjectShader.Use();
 		TexturedObjectShader.setVec3("dirLight.direction", -0.7f, -1.0f, 0.7f);
-		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+		TexturedObjectShader.setVec3("dirLight.ambient", ambientLightColour.x * 0.3, ambientLightColour.y * 0.3, ambientLightColour.z * 0.3);
 		TexturedObjectShader.setVec3("dirLight.diffuse", dirLightColour.x, dirLightColour.y, dirLightColour.z);
 		TexturedObjectShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 		// pointLights
@@ -902,6 +902,8 @@ int main()
 		TexturedObjectShader.Use();
 
 		TexturedObjectShader.setMat4("model", model);
+		TexturedObjectShader.setBool("useTexture", true);
+		TexturedObjectShader.setInt("texture1", 0);
 
 		sceneObjectDictionary["Plane Object"]->DrawMesh();
 #pragma endregion
