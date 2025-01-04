@@ -29,15 +29,6 @@
 #include "PointLight.h"
 
 
-
-/* TODO
-* Physics projectil objects done
-* Figure out random location and trajectory spawning
-* Make control variables so I can control the speed, dispersion and launch angle easily
-
-
-*/
-
 using namespace glm;
 using namespace std;
 using namespace irrklang;
@@ -139,7 +130,7 @@ int main()
 #endif
 
 	//--- Create window
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Stalker 1.5", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -341,7 +332,7 @@ int main()
 	float spawnRadius = 3.0f;
 	float projectileSpawnCooldown = 2.0f;
 	float projectileSpawnTimer = 0.0f;
-	int maxBubbles = 6;
+	int maxBubbles = 7;
 	int currentBubbles = 0;
 
 	// ---------------------------
@@ -361,6 +352,7 @@ int main()
 	sphereShader.setVec3("light.ambient", 1.0f, 1.0f, 1.0f);
 	sphereShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f); // darken diffuse light a bit
 	sphereShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	sphereShader.setInt("currentPointLights", 0);
 
 	// -----------------------
 	// Sphere proc gen
@@ -397,6 +389,8 @@ int main()
 	TexturedObjectShader.setVec3("light.position", camera.Position);
 	TexturedObjectShader.setVec3("light.direction", camera.Front);
 	TexturedObjectShader.setFloat("light.cutOff", cos(radians(12.5f)));
+	TexturedObjectShader.setInt("staticPointLights", 4);
+	TexturedObjectShader.setInt("dynamicPointLights", 0);
 
 #pragma endregion
 
@@ -625,6 +619,8 @@ int main()
 	modelShader.setVec3("light.position", camera.Position);
 	modelShader.setVec3("light.direction", camera.Front);
 	modelShader.setFloat("light.cutOff", cos(radians(12.5f)));
+	modelShader.setInt("staticPointLights", 4);
+	modelShader.setInt("dynamicPointLights", 0);
 #pragma endregion
 
 
@@ -641,7 +637,7 @@ int main()
 	float minZ = std::min(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
 	float maxZ = std::max(treeSpawnTopLeft.z, treeSpawnBottomRight.z);
 
-	int numberOfTrees = 80;
+	int numberOfTrees = 120;
 
 
 	//Pre compute the instanced matrices on the cpu
@@ -947,6 +943,7 @@ int main()
 				cerr << "OpenGL error after VBO binding: " << error << endl;
 			}
 
+			//--- Spawn bounds
 			Point topLeft = { -40.0f, -0.1f, -40.0f };
 			Point bottomRight = { 40.0f, -0.1f, -10.0f };
 
@@ -960,6 +957,7 @@ int main()
 
 			vec3 spawnPosition = vec3(randomX, randomY, randomZ);
 
+			//--- Launch angle
 			//Angle when looking down the y axis
 			float azimuth = dis(gen) * 2 * PI;
 
@@ -979,17 +977,20 @@ int main()
 
 			spawnVelocity = spawnVelocity * velocityMulitplier;
 
-			//Random speed multiplaier
+			//--- Random speed multiplaier
 			float speedMin = 0.3f;
 			float movespeedMultiplier = speedMin + (0.7f - speedMin) * dis(gen);
 
-			//Random gravity multiplier
+			//--- Random gravity multiplier
 			float gravityMultiMin = 0.0f;
 			float gravityMultiplier = gravityMultiMin + (0.04f - gravityMultiMin) * dis(gen);
 
 			newProjectileObject->Launch(vec3(spawnVelocity), vec3(spawnPosition), currentFrame, gravityMultiplier, movespeedMultiplier);
 
 			projectileObjects.push_back(newProjectileObject);
+
+
+			//--- Bubble sound
 			ISound* sound = audioEngine->play3D("Media/Audio/bathtub-ambience-27873.mp3", vec3df(spawnPosition.x, spawnPosition.y, spawnPosition.z), true, false, true);
 			if (!sound) {
 				std::cerr << "Failed to load sound file for bubble" << std::endl;
@@ -1004,7 +1005,7 @@ int main()
 				bubbleSounds[newProjectileObject] = sound;
 			}
 
-
+			//--- Bubble lighting
 			PointLight* newLight = new PointLight(
 				newProjectileObject->currentPosition,
 				1.0f,
@@ -1015,9 +1016,7 @@ int main()
 				lightColour
 			);
 
-
 			dynamicBubbleLights[newProjectileObject] = newLight;
-
 			dynamicPointLights.push_back(newLight);
 
 			currentBubbles++;
@@ -1051,12 +1050,15 @@ int main()
 
 					dynamicBubbleLights.erase(projectileObject);
 
-					sphereShader.Use();
+					TexturedObjectShader.Use();
 					int numberOfPointLights = dynamicPointLights.size();
-					sphereShader.setInt("currentPointLights", numberOfPointLights);
+					TexturedObjectShader.setInt("dynamicPointLights", numberOfPointLights);
 					delete projectileObject;
 					projectileObjects.erase(projectileObjects.begin() + i);
 					currentBubbles--;
+
+					modelShader.Use();					
+					modelShader.setInt("dynamicPointLights", numberOfPointLights);
 
 
 				}
@@ -1074,8 +1076,9 @@ int main()
 					sphereShader.setFloat("displacementScale", 0.4f);
 					sphereShader.setInt("firstNoiseTexture", texNameToUnitNo["firstNoiseTexture"]);
 					sphereShader.setInt("secondNoiseTexture", texNameToUnitNo["secondNoiseTexture"]);
-					int numberOfPointLights = dynamicPointLights.size();
-					sphereShader.setInt("currentPointLights", numberOfPointLights);
+					
+					
+					
 
 
 
@@ -1086,6 +1089,13 @@ int main()
 
 					projectileObject->DrawMesh();
 
+
+					TexturedObjectShader.Use();
+					int numberOfPointLights = dynamicPointLights.size();
+					TexturedObjectShader.setInt("dynamicPointLights", numberOfPointLights);
+
+					modelShader.Use();					
+					modelShader.setInt("dynamicPointLights", numberOfPointLights);
 					GLenum error;
 					while ((error = glGetError()) != GL_NO_ERROR) {
 						cerr << "OpenGL error post projectile render: " << error << endl;
@@ -1114,7 +1124,7 @@ int main()
 		//Looking straight forward
 		terrainModel = rotate(terrainModel, radians(0.0f), vec3(1.0f, 0.0f, 0.0f));
 		//Elevation to look upon terrain
-		terrainModel = scale(terrainModel, vec3(6.0f, 1.0f, 6.0f));
+		terrainModel = scale(terrainModel, vec3(6.0f, 1.3f, 6.0f));
 		ProceduralObjectShader.Use();
 		ProceduralObjectShader.setMat4("model", terrainModel);
 
@@ -1312,13 +1322,7 @@ void processInput(GLFWwindow* window)
 				backgroundSound->setVolume(0.04f);
 			}
 			spacePressed = false;
-		}
-		
-			
-	
-
-
-
+		}			
 	}
 }
 
